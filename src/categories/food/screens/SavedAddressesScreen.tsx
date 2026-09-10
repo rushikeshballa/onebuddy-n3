@@ -26,51 +26,53 @@ export const SavedAddressesScreen: React.FC<SavedAddressesScreenProps> = ({
     return subscribeToAddresses(setSavedAddresses);
   }, []);
 
+  const isDark = isCategoryDark();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDark && { backgroundColor: '#121214' }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: topInset + 12 }]}>
+      <View style={[styles.header, { paddingTop: topInset + 12 }, isDark && { borderBottomColor: 'rgba(255, 255, 255, 0.08)' }]}>
         <TouchableOpacity 
           onPress={onBack} 
-          style={styles.backBtn}
+          style={[styles.backBtn, isDark && { backgroundColor: 'rgba(255, 255, 255, 0.06)' }]}
           activeOpacity={0.5}
           hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
         >
-          <ChevronLeft size={24} color={isCategoryDark() ? '#F1F1EC' : '#111827'} />
+          <ChevronLeft size={24} color={isDark ? '#F1F1EC' : '#111827'} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Saved Addresses</Text>
+        <Text style={[styles.headerTitle, isDark && { color: '#F1F1EC' }]}>My Saved Addresses</Text>
       </View>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomInset + 30 }]}>
         <View style={styles.list}>
           {savedAddresses.length > 0 ? (
             savedAddresses.map((loc) => (
-              <View key={loc.id} style={styles.locItem}>
-                <View style={styles.locIconContainer}>
-                  {loc.label === 'Home' ? <Home size={20} color="#6B7280" /> : loc.label === 'Work' ? <Building size={20} color="#6B7280" /> : <MapPin size={20} color="#6B7280" />}
+              <View key={loc.id} style={[styles.locItem, isDark && { backgroundColor: '#1D1E22', borderColor: 'rgba(255, 255, 255, 0.08)' }]}>
+                <View style={[styles.locIconContainer, isDark && { backgroundColor: 'rgba(255, 255, 255, 0.06)' }]}>
+                  {loc.label === 'Home' ? <Home size={20} color={isDark ? '#9BA08F' : '#6B7280'} /> : loc.label === 'Work' ? <Building size={20} color={isDark ? '#9BA08F' : '#6B7280'} /> : <MapPin size={20} color={isDark ? '#9BA08F' : '#6B7280'} />}
                 </View>
                 <View style={styles.locDetails}>
-                  <Text style={styles.locName}>{loc.label}</Text>
-                  <Text style={styles.locArea}>{loc.houseNo}, {loc.building ? loc.building + ', ' : ''}{loc.landmark}</Text>
-                  {loc.receiverName ? <Text style={styles.receiverDetails}>{loc.receiverName} - {loc.receiverPhone}</Text> : null}
+                  <Text style={[styles.locName, isDark && { color: '#F1F1EC' }]}>{loc.label}</Text>
+                  <Text style={[styles.locArea, isDark && { color: '#9BA08F' }]}>{loc.houseNo}, {loc.building ? loc.building + ', ' : ''}{loc.landmark}</Text>
+                  {loc.receiverName ? <Text style={[styles.receiverDetails, isDark && { color: '#9BA08F' }]}>{loc.receiverName} - {loc.receiverPhone}</Text> : null}
                 </View>
                 <TouchableOpacity
                   onPress={() => onEditAddress(loc)}
-                  style={styles.editBtn}
+                  style={[styles.editBtn, isDark && { backgroundColor: 'rgba(255, 255, 255, 0.06)' }]}
                   activeOpacity={0.7}
                 >
-                  <Edit2 size={16} color="#6B7280" />
+                  <Edit2 size={16} color={isDark ? '#9BA08F' : '#6B7280'} />
                 </TouchableOpacity>
               </View>
             ))
           ) : (
-            <Text style={styles.emptyText}>No saved addresses yet.</Text>
+            <Text style={[styles.emptyText, isDark && { color: '#9BA08F' }]}>No saved addresses yet.</Text>
           )}
         </View>
 
         {/* Add Address Button */}
         <TouchableOpacity
-          style={styles.addBtn}
+          style={[styles.addBtn, isDark && { backgroundColor: 'rgba(101, 163, 13, 0.15)', borderColor: 'rgba(101, 163, 13, 0.3)' }]}
           onPress={onAddAddress}
           activeOpacity={0.8}
         >

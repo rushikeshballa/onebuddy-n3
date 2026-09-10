@@ -4,7 +4,7 @@ import { View, StyleSheet, Platform, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainTabParamList } from '../types/navigation.types';
-import { useGroceryColors } from '../theme/colors';
+import { colors, useGroceryColors } from '../theme/colors';
 import { typography } from '../theme';
 import { HomeScreen } from '../screens/HomeScreen';
 import { CategoriesScreen } from '../screens/CategoriesScreen';
@@ -38,9 +38,9 @@ export const BottomTabNavigator: React.FC = () => {
           {
             height: tabHeight,
             paddingBottom: bottomInset,
-            backgroundColor: colors.white,
+            backgroundColor: colors.cardBackground,
             borderTopColor: colors.borderLight,
-            shadowColor: colors.black,
+            shadowColor: colors.shadow,
           },
         ],
         tabBarItemStyle: styles.tabBarItem,
@@ -129,6 +129,8 @@ export const BottomTabNavigator: React.FC = () => {
 const styles = StyleSheet.create({
   tabBar: {
     borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+    backgroundColor: colors.cardBackground,
     paddingTop: 6,
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.04,

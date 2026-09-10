@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     color: colors.danger,
   },
   footer: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.cardBackground,
     padding: spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,

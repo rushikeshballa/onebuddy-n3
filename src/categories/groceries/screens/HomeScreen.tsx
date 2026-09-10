@@ -476,7 +476,7 @@ export const HomeScreen: React.FC = () => {
       )}
 
       {/* ── 1. Top Header (Branding & Upper-Right Cart) ── */}
-      <View style={[styles.topHeader, { backgroundColor: colors.white }]}>
+      <View style={[styles.topHeader, { backgroundColor: colors.cardBackground }]}>
         <View style={styles.brandRow}>
           {!!onClose && (
             <TouchableOpacity
@@ -541,7 +541,7 @@ export const HomeScreen: React.FC = () => {
       >
         {/* ── 2. Interactive Delivery Address Section (Matching CartScreen) ── */}
         <View style={[styles.addressWrapper, { backgroundColor: colors.background }]}>
-          <View style={[styles.addressManagerCard, { backgroundColor: colors.white, borderColor: colors.borderLight, shadowColor: colors.black }]}>
+          <View style={[styles.addressManagerCard, { backgroundColor: colors.cardBackground, borderColor: colors.borderLight, shadowColor: colors.shadow }]}>
 
             <TouchableOpacity
               onPress={() => setIsAddressExpanded((prev) => !prev)}
@@ -825,7 +825,7 @@ export const HomeScreen: React.FC = () => {
         </View>
 
         {/* ── 3. Search Bar & Free Delivery Banner ── */}
-        <View style={[styles.searchContainer, { backgroundColor: colors.white, borderBottomColor: colors.borderLight }]}>
+        <View style={[styles.searchContainer, { backgroundColor: colors.cardBackground, borderBottomColor: colors.borderLight }]}>
           <SearchBar
             editable={false}
             onPress={() => navigation.navigate('Search')}
@@ -1096,7 +1096,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.white,
+    backgroundColor: colors.cardBackground,
     paddingHorizontal: spacing.md,
     paddingTop: Platform.OS === 'android' ? 10 : 8,
     paddingBottom: 8,
@@ -1223,13 +1223,13 @@ const styles = StyleSheet.create({
     paddingBottom: 2,
   },
   addressManagerCard: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.cardBackground,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: colors.borderLight,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    shadowColor: colors.black,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.03,
     shadowRadius: 4,
@@ -1397,7 +1397,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.white,
+    backgroundColor: colors.cardBackground,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1518,7 +1518,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   savedAddressCard: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.cardBackground,
     borderRadius: 10,
     padding: 10,
     borderWidth: 1.5,
@@ -1625,7 +1625,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
-    backgroundColor: colors.white,
+    backgroundColor: colors.cardBackground,
     paddingBottom: spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
@@ -1717,10 +1717,10 @@ const styles = StyleSheet.create({
   addressChoiceModalCard: {
     width: '100%',
     maxWidth: 440,
-    backgroundColor: colors.white,
+    backgroundColor: colors.cardBackground,
     borderRadius: 16,
     padding: 20,
-    shadowColor: colors.black,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
     shadowRadius: 10,
@@ -1767,7 +1767,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: colors.white,
+    backgroundColor: colors.cardBackground,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -1794,7 +1794,7 @@ const styles = StyleSheet.create({
   addressChoiceOptionManual: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
+    backgroundColor: colors.cardBackground,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,

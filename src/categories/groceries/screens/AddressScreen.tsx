@@ -311,7 +311,7 @@ export const AddressScreen: React.FC<AddressScreenProps> = ({ navigation }) => {
 
       {/* Add Address Form Modal */}
       <Modal visible={showAddModal} animationType="slide">
-        <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
           <Header
             title="Add New Address"
             showBack
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.white,
+    backgroundColor: colors.cardBackground,
     padding: spacing.md,
     borderRadius: spacing.borderRadius.md,
     borderWidth: 1.5,
@@ -419,7 +419,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   footer: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.cardBackground,
     padding: spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     padding: spacing.xl,
-    backgroundColor: colors.white,
+    backgroundColor: colors.cardBackground,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
   choiceCard: {
     width: '100%',
     maxWidth: 440,
-    backgroundColor: colors.white,
+    backgroundColor: colors.cardBackground,
     borderRadius: 20,
     padding: 22,
     borderWidth: 1,
@@ -522,7 +522,7 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: colors.white,
+    backgroundColor: colors.cardBackground,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
   choiceOptionManual: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.white,
+    backgroundColor: colors.cardBackground,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,

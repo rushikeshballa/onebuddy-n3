@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
   bottomFooter: {
     flexDirection: 'row',
     padding: spacing.md,
-    backgroundColor: colors.white,
+    backgroundColor: colors.cardBackground,
     borderTopWidth: 1,
     borderTopColor: colors.borderLight,
     gap: spacing.md,

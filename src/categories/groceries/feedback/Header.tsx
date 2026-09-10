@@ -22,7 +22,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    backgroundColor: colors.white,
+    backgroundColor: colors.cardBackground || colors.white,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight || colors.divider,
   },

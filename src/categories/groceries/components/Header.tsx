@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useGroceryColors } from '../theme/colors';
+import { colors, useGroceryColors } from '../theme/colors';
 import { typography, spacing } from '../theme';
 
 interface HeaderProps {
@@ -22,7 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   const colors = useGroceryColors();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.white, borderBottomColor: colors.borderLight }]}>
+    <View style={[styles.container, { backgroundColor: colors.cardBackground, borderBottomColor: colors.borderLight }]}>
       <View style={styles.leftContainer}>
         {showBack && (
           <TouchableOpacity
@@ -57,7 +57,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.md,
+    backgroundColor: colors.cardBackground,
     borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
   },
   leftContainer: {
     flexDirection: 'row',

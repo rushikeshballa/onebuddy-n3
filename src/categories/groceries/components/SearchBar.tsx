@@ -10,7 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useGroceryColors } from '../theme/colors';
+import { colors, useGroceryColors } from '../theme/colors';
 import { typography, spacing } from '../theme';
 
 export const DEFAULT_ROTATING_CATEGORIES = [
@@ -105,7 +105,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   }, [value, placeholder, rotatingCategories.length]);
 
   const content = (
-    <View style={[styles.container, { backgroundColor: colors.white, borderColor: colors.borderLight, shadowColor: colors.black }, style]}>
+    <View style={[styles.container, { backgroundColor: colors.inputBg || colors.cardBackground, borderColor: colors.borderLight, shadowColor: colors.shadow }, style]}>
       <Ionicons
         name="search-outline"
         size={20}
@@ -187,9 +187,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     height: 48,
     borderWidth: 1,
+    borderColor: colors.borderLight,
+    backgroundColor: colors.inputBg || colors.cardBackground,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
+    shadowColor: colors.shadow,
     elevation: 2,
     marginVertical: spacing.xs,
   },

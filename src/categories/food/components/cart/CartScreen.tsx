@@ -19,6 +19,8 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MapPin, ChevronDown, ChevronUp } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAppTheme } from '@/theme/ThemeContext';
+import { isCategoryDark } from '@/theme/categoryThemeBridge';
 
 
 const safeStorage = {
@@ -72,11 +74,12 @@ const mapGlobalAddressToSaved = (addr: GlobalAddress): SavedAddressItem => ({
 // ─── Constants ─────────────────────────────────────────────────────────────
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const COLORS = {
+export const LIGHT_COLORS = {
     background: '#FFFFFF',
     surface: '#FFFFFF',
     accent: '#65A30D',
     softHighlight: '#F9FAFB',
+    inputBg: '#FFFFFF',
     textPrimary: '#111827',
     textMuted: '#6B7280',
     border: '#E5E7EB',
@@ -85,6 +88,36 @@ const COLORS = {
     cardRadius: 16,
     pillRadius: 20,
 };
+
+export const DARK_COLORS = {
+    background: '#121214',
+    surface: '#1D1E22',
+    accent: '#65A30D',
+    softHighlight: '#24262B',
+    inputBg: '#24262B',
+    textPrimary: '#F1F1EC',
+    textMuted: '#9BA08F',
+    border: 'rgba(255, 255, 255, 0.08)',
+    error: '#FF5252',
+    success: '#4CAF50',
+    cardRadius: 16,
+    pillRadius: 20,
+};
+
+export const COLORS = LIGHT_COLORS;
+
+function useCartTheme() {
+    let isDark = false;
+    try {
+        const { scheme } = useAppTheme();
+        isDark = scheme === 'dark';
+    } catch {
+        isDark = isCategoryDark();
+    }
+    const currentColors = isDark ? DARK_COLORS : LIGHT_COLORS;
+    const currentStyles = isDark ? darkStyles : lightStyles;
+    return { isDark, COLORS: currentColors, styles: currentStyles };
+}
 
 // ─── Mock Data ──────────────────────────────────────────────────────────────
 const DELIVERY_FEE = 39;
@@ -156,6 +189,7 @@ const CartItemRow: React.FC<CartItemRowProps> = ({
     onDecrement,
     onRemove,
 }) => {
+    const { styles } = useCartTheme();
     const fadeAnim = useRef(new Animated.Value(1)).current;
     const slideAnim = useRef(new Animated.Value(0)).current;
 
@@ -219,6 +253,7 @@ interface CrossSellCardProps {
 }
 
 const CrossSellCard: React.FC<CrossSellCardProps> = ({ item, isAdded, onAdd, onDismiss }) => {
+    const { styles } = useCartTheme();
     const scaleAnim = useRef(new Animated.Value(1)).current;
 
     const handleAdd = () => {
@@ -269,6 +304,7 @@ interface TipChipProps {
 }
 
 const TipChip: React.FC<TipChipProps> = ({ amount, selected, onSelect }) => {
+    const { COLORS, styles } = useCartTheme();
     const bgAnim = useRef(new Animated.Value(selected ? 1 : 0)).current;
 
     const handlePress = () => {
@@ -308,6 +344,7 @@ interface CartScreenProps {
 }
 
 const CartScreen: React.FC<CartScreenProps> = ({ onProceed, onBack }) => {
+    const { isDark, COLORS, styles } = useCartTheme();
     const insets = useSafeAreaInsets();
     const topInset = Math.max(insets.top, Platform.OS === 'android' ? StatusBar.currentHeight || 24 : 0);
     const {
@@ -1001,9 +1038,9 @@ const CartScreen: React.FC<CartScreenProps> = ({ onProceed, onBack }) => {
                             {deliveryAddress || 'Add Current Address'}
                         </Text>
                         {isAddressExpanded ? (
-                            <ChevronUp size={16} color="#6B7280" />
+                            <ChevronUp size={16} color={COLORS.textMuted} />
                         ) : (
-                            <ChevronDown size={16} color="#6B7280" />
+                            <ChevronDown size={16} color={COLORS.textMuted} />
                         )}
                     </TouchableOpacity>
 
@@ -1534,7 +1571,7 @@ const CartScreen: React.FC<CartScreenProps> = ({ onProceed, onBack }) => {
 };
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
+const createStyles = (COLORS: typeof LIGHT_COLORS, isDark: boolean) => StyleSheet.create({
     safeArea: { flex: 1, backgroundColor: COLORS.background },
     topProgressBar: {
         position: 'absolute',
@@ -1565,7 +1602,7 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
     floatingLoaderText: {
-        color: COLORS.textPrimary,
+        color: '#F1F1EC',
         fontSize: 12,
         fontWeight: '700',
         letterSpacing: 0.3,
@@ -1636,7 +1673,7 @@ const styles = StyleSheet.create({
         padding: 12,
     },
     addressInput: {
-        backgroundColor: COLORS.background,
+        backgroundColor: isDark ? COLORS.softHighlight : COLORS.background,
         color: COLORS.textPrimary,
         borderRadius: 8,
         padding: 10,
@@ -1668,15 +1705,17 @@ const styles = StyleSheet.create({
         borderRadius: 6,
     },
     addressSaveBtnText: {
-        color: COLORS.background,
+        color: '#FFFFFF',
         fontSize: 13,
         fontWeight: '700',
     },
     toastContainer: {
         position: 'absolute',
-        top: 0,
+        top: 24,
         alignSelf: 'center',
-        backgroundColor: COLORS.success,
+        backgroundColor: COLORS.surface,
+        borderColor: COLORS.accent,
+        borderWidth: 1,
         paddingVertical: 14,
         paddingHorizontal: 28,
         borderRadius: 24,
@@ -1688,7 +1727,7 @@ const styles = StyleSheet.create({
         elevation: 8,
     },
     toastText: {
-        color: '#111827',
+        color: COLORS.textPrimary,
         fontWeight: '800',
         fontSize: 16,
         letterSpacing: 0.3,
@@ -1754,10 +1793,10 @@ const styles = StyleSheet.create({
 
     stepperContainer: {
         flexDirection: 'row', alignItems: 'center',
-        backgroundColor: COLORS.background, borderRadius: 10,
+        backgroundColor: isDark ? COLORS.softHighlight : COLORS.background, borderRadius: 10,
         borderWidth: 1, borderColor: COLORS.border, overflow: 'hidden',
     },
-    stepperBtn: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.softHighlight },
+    stepperBtn: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', backgroundColor: isDark ? COLORS.surface : COLORS.softHighlight },
     stepperBtnDisabled: { opacity: 0.4 },
     stepperBtnText: { color: COLORS.accent, fontSize: 18, fontWeight: '700', lineHeight: 22 },
     stepperCount: { width: 28, textAlign: 'center', color: COLORS.textPrimary, fontSize: 15, fontWeight: '700' },
@@ -1773,17 +1812,17 @@ const styles = StyleSheet.create({
         position: 'absolute', top: 8, right: 8,
         backgroundColor: COLORS.accent, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2,
     },
-    crossSellTagText: { fontSize: 10, fontWeight: '800', color: COLORS.background },
+    crossSellTagText: { fontSize: 10, fontWeight: '800', color: '#FFFFFF' },
     crossSellInfo: { padding: 10 },
     crossSellName: { fontSize: 13, fontWeight: '600', color: COLORS.textPrimary, marginBottom: 4, minHeight: 34 },
     crossSellPrice: { fontSize: 14, fontWeight: '800', color: COLORS.accent, marginBottom: 8 },
     crossSellAddBtn: {
-        backgroundColor: COLORS.background, borderWidth: 1.5,
+        backgroundColor: isDark ? COLORS.surface : COLORS.background, borderWidth: 1.5,
         borderColor: COLORS.accent, borderRadius: 8, paddingVertical: 6, alignItems: 'center',
     },
     crossSellAddBtnActive: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
     crossSellAddText: { fontSize: 13, fontWeight: '700', color: COLORS.accent },
-    crossSellAddTextActive: { color: COLORS.background },
+    crossSellAddTextActive: { color: '#FFFFFF' },
 
     couponRow: { flexDirection: 'row', gap: 10 },
     couponInputWrapper: {
@@ -1801,7 +1840,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 18, justifyContent: 'center', alignItems: 'center',
     },
     couponAppliedBtn: { backgroundColor: COLORS.success },
-    couponApplyText: { color: COLORS.background, fontWeight: '800', fontSize: 13 },
+    couponApplyText: { color: '#FFFFFF', fontWeight: '800', fontSize: 13 },
     couponSaveText: { marginTop: 10, color: COLORS.success, fontSize: 13, fontWeight: '600' },
     couponHint: { marginTop: 6, color: COLORS.textMuted, fontSize: 12 },
 
@@ -1821,7 +1860,7 @@ const styles = StyleSheet.create({
         minHeight: 72, textAlignVertical: 'top',
     },
 
-    billCard: { borderColor: COLORS.accent + '40' },
+    billCard: { borderColor: COLORS.accent + '40', backgroundColor: COLORS.surface },
     billRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10, alignItems: 'center' },
     billLabel: { fontSize: 14, color: COLORS.textMuted, fontWeight: '500' },
     billValue: { fontSize: 14, color: COLORS.textPrimary, fontWeight: '600' },
@@ -1868,7 +1907,7 @@ const styles = StyleSheet.create({
         shadowColor: COLORS.accent, shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.4, shadowRadius: 12, elevation: 8,
     },
-    proceedBtnText: { color: COLORS.background, fontSize: 15, fontWeight: '800', letterSpacing: 0.2 },
+    proceedBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '800', letterSpacing: 0.2 },
 
     addressFormTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary },
     addressEditTopHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: COLORS.border },
@@ -1879,9 +1918,9 @@ const styles = StyleSheet.create({
     locationBarHorizontal: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.03)',
+        backgroundColor: isDark ? COLORS.surface : 'rgba(0, 0, 0, 0.03)',
         borderWidth: 1,
-        borderColor: 'rgba(0, 0, 0, 0.08)',
+        borderColor: isDark ? COLORS.border : 'rgba(0, 0, 0, 0.08)',
         borderRadius: 16,
         paddingHorizontal: 16,
         paddingVertical: 12,
@@ -1890,7 +1929,7 @@ const styles = StyleSheet.create({
     },
     locationTextHorizontal: {
         fontSize: 14,
-        color: '#111827',
+        color: COLORS.textPrimary,
         flex: 1,
     },
     addressSectionHeaderBtn: { flexDirection: 'row', alignItems: 'center', paddingVertical: 2 },
@@ -1902,7 +1941,7 @@ const styles = StyleSheet.create({
     addressChevronWrapper: { width: 32, height: 32, borderRadius: 16, backgroundColor: COLORS.softHighlight, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: COLORS.border },
     addressChevronWrapperExpanded: { backgroundColor: COLORS.accent, borderColor: COLORS.accent },
     addressChevronIcon: { fontSize: 11, fontWeight: '800', color: COLORS.accent },
-    addressChevronIconExpanded: { color: COLORS.background },
+    addressChevronIconExpanded: { color: '#FFFFFF' },
 
     addressSplitLayout: { flexDirection: SCREEN_WIDTH > 700 ? 'row' : 'column', gap: 16 },
     addressFormColumn: { flex: 1 },
@@ -1911,23 +1950,23 @@ const styles = StyleSheet.create({
     columnHeaderTitle: { fontSize: 14, fontWeight: '700', color: COLORS.textPrimary, marginBottom: 4 },
     columnHeaderSub: { fontSize: 12, color: COLORS.textMuted, marginBottom: 12 },
 
-    formInput: { backgroundColor: COLORS.background, color: COLORS.textPrimary, borderRadius: 8, padding: 10, fontSize: 13, borderColor: COLORS.border, borderWidth: 1, marginBottom: 8 },
+    formInput: { backgroundColor: isDark ? COLORS.softHighlight : COLORS.background, color: COLORS.textPrimary, borderRadius: 8, padding: 10, fontSize: 13, borderColor: COLORS.border, borderWidth: 1, marginBottom: 8 },
     formSectionTitle: { fontSize: 13, fontWeight: '700', color: COLORS.textPrimary, marginTop: 8, marginBottom: 6 },
     labelRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-    labelBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.background, alignItems: 'center' },
+    labelBtn: { flex: 1, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: COLORS.border, backgroundColor: isDark ? COLORS.softHighlight : COLORS.background, alignItems: 'center' },
     labelBtnActive: { borderColor: COLORS.accent, backgroundColor: COLORS.accent + '20' },
     labelText: { color: COLORS.textMuted, fontSize: 12, fontWeight: '600' },
     labelTextActive: { color: COLORS.accent, fontWeight: '700' },
     inputWrapper: { marginBottom: 10, position: 'relative', marginTop: 8 },
     inputLabel: { position: 'absolute', top: -7, left: 10, backgroundColor: COLORS.surface, paddingHorizontal: 4, fontSize: 11, color: COLORS.textMuted, zIndex: 1 },
-    formInputLite: { backgroundColor: COLORS.background, color: COLORS.textPrimary, borderRadius: 8, padding: 10, fontSize: 13, borderColor: COLORS.border, borderWidth: 1 },
-    phoneInputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.background, borderRadius: 8, borderColor: COLORS.border, borderWidth: 1, paddingHorizontal: 10 },
+    formInputLite: { backgroundColor: isDark ? COLORS.softHighlight : COLORS.background, color: COLORS.textPrimary, borderRadius: 8, padding: 10, fontSize: 13, borderColor: COLORS.border, borderWidth: 1 },
+    phoneInputRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? COLORS.softHighlight : COLORS.background, borderRadius: 8, borderColor: COLORS.border, borderWidth: 1, paddingHorizontal: 10 },
     phonePrefix: { color: COLORS.textPrimary, fontSize: 13, fontWeight: '500', marginRight: 6, borderRightWidth: 1, borderRightColor: COLORS.border, paddingRight: 6 },
     formInputLiteFlex: { flex: 1, color: COLORS.textPrimary, paddingVertical: 10, fontSize: 13 },
 
     savedAddressList: { gap: 10 },
     savedAddressCard: {
-        backgroundColor: COLORS.background,
+        backgroundColor: isDark ? COLORS.softHighlight : COLORS.background,
         borderRadius: 10,
         borderWidth: 1.5,
         borderColor: COLORS.border,
@@ -1936,7 +1975,7 @@ const styles = StyleSheet.create({
     },
     savedAddressCardActive: {
         borderColor: COLORS.accent,
-        backgroundColor: COLORS.softHighlight,
+        backgroundColor: isDark ? 'rgba(101, 163, 13, 0.15)' : COLORS.softHighlight,
     },
     savedAddressCardHeader: {
         flexDirection: 'row',
@@ -1945,7 +1984,7 @@ const styles = StyleSheet.create({
         marginBottom: 6,
     },
     savedAddressBadge: {
-        backgroundColor: COLORS.softHighlight,
+        backgroundColor: isDark ? COLORS.surface : COLORS.softHighlight,
         paddingHorizontal: 8,
         paddingVertical: 3,
         borderRadius: 6,
@@ -1973,7 +2012,7 @@ const styles = StyleSheet.create({
     activeTagText: {
         fontSize: 10,
         fontWeight: '800',
-        color: COLORS.background,
+        color: '#FFFFFF',
         letterSpacing: 0.5,
     },
     savedAddressCardBeingEdited: {
@@ -1986,7 +2025,7 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     addressEditBtn: {
-        backgroundColor: COLORS.softHighlight,
+        backgroundColor: isDark ? COLORS.surface : COLORS.softHighlight,
         paddingHorizontal: 8,
         paddingVertical: 3,
         borderRadius: 6,
@@ -2018,7 +2057,7 @@ const styles = StyleSheet.create({
     },
     undoToastText: {
         flex: 1,
-        color: COLORS.textPrimary,
+        color: '#FFFFFF',
         fontSize: 13,
         fontWeight: '600',
         marginRight: 10,
@@ -2030,7 +2069,7 @@ const styles = StyleSheet.create({
         borderRadius: 6,
     },
     undoToastBtnText: {
-        color: COLORS.background,
+        color: '#FFFFFF',
         fontWeight: '800',
         fontSize: 12,
         letterSpacing: 0.5,
@@ -2040,7 +2079,7 @@ const styles = StyleSheet.create({
         paddingVertical: 3,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: COLORS.softHighlight,
+        backgroundColor: isDark ? COLORS.surface : COLORS.softHighlight,
         borderRadius: 6,
         borderWidth: 1,
         borderColor: COLORS.border,
@@ -2054,7 +2093,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         paddingHorizontal: 14,
         borderRadius: 6,
-        backgroundColor: COLORS.softHighlight,
+        backgroundColor: isDark ? COLORS.surface : COLORS.softHighlight,
         borderWidth: 1,
         borderColor: COLORS.border,
         alignItems: 'center',
@@ -2074,7 +2113,7 @@ const styles = StyleSheet.create({
     addNewAddressToggleBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.softHighlight,
+        backgroundColor: isDark ? COLORS.surface : COLORS.softHighlight,
         borderRadius: 12,
         paddingVertical: 10,
         paddingHorizontal: 14,
@@ -2099,13 +2138,13 @@ const styles = StyleSheet.create({
         backgroundColor: COLORS.accent,
     },
     addNewAddressPlusText: {
-        color: COLORS.background,
+        color: '#FFFFFF',
         fontSize: 15,
         fontWeight: '900',
         lineHeight: 18,
     },
     addNewAddressPlusTextActive: {
-        color: COLORS.background,
+        color: '#FFFFFF',
     },
     addNewAddressToggleLabel: {
         color: COLORS.accent,
@@ -2122,7 +2161,7 @@ const styles = StyleSheet.create({
     addFormPlaceholder: {
         padding: 16,
         borderRadius: 12,
-        backgroundColor: COLORS.background,
+        backgroundColor: isDark ? COLORS.softHighlight : COLORS.background,
         borderWidth: 1,
         borderColor: COLORS.border,
         borderStyle: 'dashed',
@@ -2140,7 +2179,7 @@ const styles = StyleSheet.create({
         marginTop: 6,
         paddingTop: 6,
         borderTopWidth: 1,
-        borderTopColor: COLORS.border + '60',
+        borderTopColor: COLORS.border,
     },
     savedAddressReceiverText: {
         fontSize: 12,
@@ -2169,7 +2208,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     crossSellDismissText: {
-        color: '#111827',
+        color: '#FFFFFF',
         fontSize: 11,
         fontWeight: '800',
     },
@@ -2202,7 +2241,7 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: COLORS.softHighlight,
+        backgroundColor: isDark ? COLORS.surface : COLORS.softHighlight,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -2220,7 +2259,7 @@ const styles = StyleSheet.create({
     addressChoiceOptionLive: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.background,
+        backgroundColor: isDark ? COLORS.softHighlight : COLORS.background,
         borderRadius: 14,
         padding: 16,
         borderWidth: 1.5,
@@ -2255,7 +2294,7 @@ const styles = StyleSheet.create({
         borderRadius: 4,
     },
     livePillText: {
-        color: COLORS.background,
+        color: '#FFFFFF',
         fontSize: 9,
         fontWeight: '900',
         letterSpacing: 0.5,
@@ -2263,7 +2302,7 @@ const styles = StyleSheet.create({
     addressChoiceOptionManual: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.background,
+        backgroundColor: isDark ? COLORS.softHighlight : COLORS.background,
         borderRadius: 14,
         padding: 16,
         borderWidth: 1,
@@ -2273,7 +2312,7 @@ const styles = StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: COLORS.softHighlight,
+        backgroundColor: isDark ? COLORS.surface : COLORS.softHighlight,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 14,
@@ -2394,11 +2433,15 @@ const styles = StyleSheet.create({
         elevation: 6,
     },
     deleteModalConfirmText: {
-        color: '#111827',
+        color: '#FFFFFF',
         fontSize: 14,
         fontWeight: '800',
     },
 });
+
+const lightStyles = createStyles(LIGHT_COLORS, false);
+const darkStyles = createStyles(DARK_COLORS, true);
+const styles = lightStyles;
 
 export default CartScreen;
 

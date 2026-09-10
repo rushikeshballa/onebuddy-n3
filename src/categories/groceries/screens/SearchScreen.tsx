@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   },
   searchPadding: {
     paddingHorizontal: spacing.md,
-    backgroundColor: colors.white,
+    backgroundColor: colors.cardBackground,
     paddingBottom: spacing.xs,
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,

@@ -1,0 +1,23 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+import type { CartItem } from '../components/types';
+import type { Address } from '../data/address';
+
+export type FoodMainTabParamList = {
+  Home: undefined;
+  Orders: undefined;
+  Favorites: undefined;
+};
+
+export type FoodStackParamList = {
+  MainTabs: NavigatorScreenParams<FoodMainTabParamList> | undefined;
+  RestaurantMenu: { restaurantId: string };
+  Cart: undefined;
+  PaymentCheckout: {
+    grandTotal: number;
+    cartItems: CartItem[];
+    restaurantName?: string;
+  };
+  Feedback: { order: any };
+  LocationSearch: undefined;
+  AddAddress: { initialData?: Address | null };
+};

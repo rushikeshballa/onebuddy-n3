@@ -9,6 +9,7 @@ import React, {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { provider } from './otpProvider';
+import { auth } from '@/firebase/config';
 
 const TOKEN_KEY = 'onebuddy:otpToken';
 const IDENT_KEY = 'onebuddy:otpIdentifier';
@@ -77,6 +78,13 @@ export function OtpAuthProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.multiRemove([TOKEN_KEY, IDENT_KEY]);
     setToken(null);
     setIdentifier(null);
+    try {
+      if (auth) {
+        await auth.signOut();
+      }
+    } catch (err) {
+      console.warn('Firebase signOut error:', err);
+    }
   }, []);
 
   const value = useMemo<OtpAuthValue>(

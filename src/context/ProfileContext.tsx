@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '@/firebase/context/AuthContext';
+import { subscribeToProfile, updateProfileFields } from '@/firebase/services/userService';
 
 export type AvatarStyleId =
   | 'classic'
@@ -83,6 +85,7 @@ const ProfileContext = createContext<ProfileContextType>({
 
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<ProfileData>(DEFAULT_PROFILE);
+  const { user } = useAuth();
 
   useEffect(() => {
     (async () => {
@@ -102,12 +105,40 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
+  // Listen to Firestore profile updates when Firebase user is active
+  useEffect(() => {
+    if (!user) return;
+    const unsub = subscribeToProfile(user.uid, (data) => {
+      if (data) {
+        setProfile((prev) => {
+          const updated: ProfileData = {
+            ...prev,
+            name: data.name || prev.name,
+            email: data.email || prev.email,
+            phone: data.phone || prev.phone,
+          };
+          AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated)).catch(() => {});
+          return updated;
+        });
+      }
+    });
+    return unsub;
+  }, [user]);
+
   const updateProfile = async (data: Partial<ProfileData>) => {
     setProfile((prev) => {
       const updated = { ...prev, ...data };
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated)).catch(() => {});
       return updated;
     });
+    if (user) {
+      const fields: Record<string, string> = {};
+      if (data.name) fields.name = data.name;
+      if (data.phone) fields.phone = data.phone;
+      if (Object.keys(fields).length > 0) {
+        updateProfileFields(user.uid, fields).catch(() => {});
+      }
+    }
   };
 
   return (

@@ -7,6 +7,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { brand, schemes } from '@/design/tokens';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { useOtpAuth } from '@/auth/OtpAuthContext';
+import { useAuth } from '@/firebase/context/AuthContext';
 
 import SplashScreen from '@/screens/SplashScreen';
 import AuthScreen from '@/screens/auth/authScreen';
@@ -77,13 +78,16 @@ export default function RootNavigator() {
   const { scheme } = useAppTheme();
   const tokens = schemes[scheme];
   const { token, hydrated } = useOtpAuth();
+  const { user, initializing } = useAuth();
   const [hasLaunched, setHasLaunched] = useState(false);
 
+  const isAuthenticated = Boolean(token || user);
+
   useEffect(() => {
-    if (!token) {
+    if (!isAuthenticated) {
       setHasLaunched(false);
     }
-  }, [token]);
+  }, [isAuthenticated]);
 
   const navTheme = {
     ...(scheme === 'dark' ? DarkTheme : DefaultTheme),
@@ -97,7 +101,7 @@ export default function RootNavigator() {
     },
   };
 
-  if (!hydrated) {
+  if (!hydrated || initializing) {
     return (
       <View style={[styles.boot, { backgroundColor: tokens.bgDeep }]}>
         <ActivityIndicator size="large" color={brand.gold} />
@@ -108,7 +112,7 @@ export default function RootNavigator() {
   return (
     <NavigationContainer theme={navTheme}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {token ? (
+        {isAuthenticated ? (
           <>
             {!hasLaunched && (
               <Stack.Screen name="Splash">

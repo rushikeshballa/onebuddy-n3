@@ -38,6 +38,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useOtpAuth } from '@/auth/OtpAuthContext';
 import { OTP_LENGTH, OTP_RESEND_SECONDS } from '@/auth/otpProvider';
+import { useAuth } from '@/firebase/context/AuthContext';
+import { useProfile } from '@/context/ProfileContext';
 import type { RootScreenProps } from '@/navigation/types';
 import OrbitingLogo from '@/components/OrbitingLogo';
 import { brand } from '@/design/tokens';
@@ -95,10 +97,10 @@ export function validateFullName(name: string): string | null {
   if (trimmed.length > 50) {
     return 'Name cannot exceed 50 characters.';
   }
-  // Allow letters, spaces, hyphens, and apostrophes
-  const nameRegex = /^[a-zA-Z\s'-]+$/;
+  // Allow letters, spaces, hyphens, apostrophes, and periods (for initials)
+  const nameRegex = /^[a-zA-Z\s'.-]+$/;
   if (!nameRegex.test(trimmed)) {
-    return 'Name can only contain letters, spaces, and hyphens.';
+    return 'Name can only contain letters, spaces, hyphens, and periods.';
   }
   return null;
 }
@@ -108,7 +110,8 @@ export function validateDob(dobStr: string): string | null {
   if (!trimmed) {
     return 'Date of Birth is required.';
   }
-  const match = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  const normalized = trimmed.replace(/-/g, '/');
+  const match = normalized.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (!match) {
     return 'Enter Date of Birth in DD/MM/YYYY format.';
   }
@@ -522,6 +525,7 @@ function OtpField({
   touched,
   step,
   isPhoneValid,
+  hasSentOnce,
 }: {
   digits: string[];
   secondsLeft: number;
@@ -535,6 +539,7 @@ function OtpField({
   touched?: boolean;
   step?: Step;
   isPhoneValid?: boolean;
+  hasSentOnce?: boolean;
 }) {
   const hasError = !!touched && !!error;
   const isComplete = digits.every((d) => d.trim() !== '');
@@ -543,9 +548,9 @@ function OtpField({
 
   const resendLabel = isCooldown
     ? `Resend in ${secondsLeft}s`
-    : step === 'phone'
-    ? 'Send OTP'
-    : 'Resend OTP';
+    : hasSentOnce || step === 'otp'
+    ? 'Resend OTP'
+    : 'Send OTP';
 
   return (
     <View style={s.fieldGroup}>
@@ -566,7 +571,7 @@ function OtpField({
             ) : null}
           </View>
           <Pressable
-            onPress={isCooldown ? undefined : onResend}
+            onPress={isDisabled ? undefined : onResend}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel={resendLabel}
@@ -650,11 +655,13 @@ interface FaceProps {
   onVerify: () => void;
   onResend: () => void;
   onOpenDatePicker: () => void;
+  onGoogleSignIn?: () => void;
   digitRefs: React.MutableRefObject<Array<TextInput | null>>;
   fullNameInputRef: React.MutableRefObject<TextInput | null>;
   dobInputRef: React.MutableRefObject<TextInput | null>;
   emailInputRef: React.MutableRefObject<TextInput | null>;
   phoneInputRef: React.MutableRefObject<TextInput | null>;
+  hasSentOnce: boolean;
 }
 
 function CardFace({
@@ -683,11 +690,13 @@ function CardFace({
   onVerify,
   onResend,
   onOpenDatePicker,
+  onGoogleSignIn,
   digitRefs,
   fullNameInputRef,
   dobInputRef,
   emailInputRef,
   phoneInputRef,
+  hasSentOnce,
 }: FaceProps) {
   const isLogin = tab === 'login';
   const isOtpStep = step === 'otp';
@@ -960,6 +969,7 @@ function CardFace({
         touched={touched.otp}
         step={step}
         isPhoneValid={!validatePhone(phone)}
+        hasSentOnce={hasSentOnce}
       />
 
       {/* GENERAL ERROR BANNER */}
@@ -1005,7 +1015,7 @@ function CardFace({
             pressed && { transform: [{ scale: 0.97 }] },
             Platform.OS === 'web' && ({ cursor: 'pointer' } as any),
           ]}
-          onPress={() => console.log('Google Sign In pressed')}
+          onPress={onGoogleSignIn}
         >
           <GoogleIcon />
           <Text style={s.googleBtnText}>Sign in with Google</Text>
@@ -1039,6 +1049,8 @@ function CardFace({
 export default function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
   const insets = useSafeAreaInsets();
   const { sendOtp, verifyOtp } = useOtpAuth();
+  const { signInWithGoogle, authenticateWithPhoneOrEmail } = useAuth();
+  const { updateProfile } = useProfile();
 
   /* ── tab state ── */
   const [activeTab, setActiveTab] = useState<Tab>('login');
@@ -1067,6 +1079,7 @@ export default function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
   const dobInputRef = useRef<TextInput | null>(null);
   const emailInputRef = useRef<TextInput | null>(null);
   const phoneInputRef = useRef<TextInput | null>(null);
+  const lastSentPhone = useRef<string>('');
 
   /* ── flip animation ── */
   const flipAnim = useRef(new Animated.Value(0)).current;
@@ -1091,6 +1104,8 @@ export default function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
       setTouched({});
       setGeneralError(null);
       setStep('phone');
+      setSecondsLeft(0);
+      lastSentPhone.current = '';
 
       // swap content at exact mid-point
       midTimer.current = setTimeout(() => setVisibleTab(next), FLIP_MS / 2);
@@ -1205,7 +1220,20 @@ export default function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
       return t;
     });
     setGeneralError(null);
-    if (step === 'otp') setStep('phone');
+
+    // If phone number is edited away from the number that was sent an OTP:
+    if (lastSentPhone.current && clean !== lastSentPhone.current) {
+      // Instantly cancel cooldown for previous number so new number can receive OTP immediately
+      setSecondsLeft(0);
+      // Clear previously entered digits and errors since they belonged to the old phone number
+      setDigits(Array(OTP_LENGTH).fill(''));
+      setFieldErrors((prev) => ({ ...prev, otp: null }));
+      if (step === 'otp') {
+        setStep('phone');
+      }
+    } else if (step === 'otp' && clean.length < 10) {
+      setStep('phone');
+    }
   }, [step]);
 
   const handleBlurField = useCallback((field: keyof TouchedFields) => {
@@ -1233,61 +1261,19 @@ export default function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
     const cleanPhone = cleanPhoneNumber(phone);
     const phoneErr = validatePhone(cleanPhone);
 
-    if (activeTab === 'signup') {
-      const nameErr = validateFullName(fullName);
-      const dobErr = validateDob(dob);
-      const emailErr = validateEmail(email);
-
-      const nextErrors: FieldErrors = {
-        fullName: nameErr,
-        dob: dobErr,
-        email: emailErr,
-        phone: phoneErr,
-      };
-
-      setTouched({
-        fullName: true,
-        dob: true,
-        email: true,
-        phone: true,
-      });
-      setFieldErrors(nextErrors);
-
-      if (nameErr) {
-        fullNameInputRef.current?.focus();
-        setGeneralError('Please enter a valid full name.');
-        return;
-      }
-      if (dobErr) {
-        dobInputRef.current?.focus();
-        setGeneralError(dobErr);
-        return;
-      }
-      if (emailErr) {
-        emailInputRef.current?.focus();
-        setGeneralError(emailErr);
-        return;
-      }
-      if (phoneErr) {
-        phoneInputRef.current?.focus();
-        setGeneralError(phoneErr);
-        return;
-      }
-    } else {
-      // Login tab
-      setTouched((prev) => ({ ...prev, phone: true }));
-      setFieldErrors((prev) => ({ ...prev, phone: phoneErr }));
-      if (phoneErr) {
-        phoneInputRef.current?.focus();
-        setGeneralError(phoneErr);
-        return;
-      }
+    setTouched((prev) => ({ ...prev, phone: true }));
+    setFieldErrors((prev) => ({ ...prev, phone: phoneErr }));
+    if (phoneErr) {
+      phoneInputRef.current?.focus();
+      setGeneralError(phoneErr);
+      return;
     }
 
     setGeneralError(null);
     setBusy(true);
     try {
       await sendOtp(cleanPhone);
+      lastSentPhone.current = cleanPhone;
       setDigits(Array(OTP_LENGTH).fill(''));
       setStep('otp');
       setSecondsLeft(OTP_RESEND_SECONDS);
@@ -1299,48 +1285,144 @@ export default function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
     } finally {
       setBusy(false);
     }
-  }, [activeTab, fullName, dob, email, phone, sendOtp]);
+  }, [phone, sendOtp]);
 
   const handleVerify = useCallback(async () => {
+    const cleanPhone = cleanPhoneNumber(phone);
+    const phoneErr = validatePhone(cleanPhone);
     const otpErr = validateOtp(digits);
-    if (otpErr) {
-      setTouched((prev) => ({ ...prev, otp: true }));
-      setFieldErrors((prev) => ({ ...prev, otp: otpErr }));
-      const firstEmpty = digits.findIndex((d) => !d);
-      if (firstEmpty >= 0) digitRefs.current[firstEmpty]?.focus();
-      return;
+
+    if (activeTab === 'signup') {
+      const nameErr = validateFullName(fullName);
+      const dobErr = validateDob(dob);
+      const emailErr = validateEmail(email);
+
+      const hasError = !!nameErr || !!dobErr || !!emailErr || !!phoneErr || !!otpErr;
+      if (hasError) {
+        setTouched({
+          fullName: true,
+          dob: true,
+          email: true,
+          phone: true,
+          otp: true,
+        });
+        setFieldErrors({
+          fullName: nameErr,
+          dob: dobErr,
+          email: emailErr,
+          phone: phoneErr,
+          otp: otpErr,
+        });
+
+        if (nameErr) {
+          fullNameInputRef.current?.focus();
+          setGeneralError(nameErr);
+        } else if (dobErr) {
+          dobInputRef.current?.focus();
+          setGeneralError(dobErr);
+        } else if (emailErr) {
+          emailInputRef.current?.focus();
+          setGeneralError(emailErr);
+        } else if (phoneErr) {
+          phoneInputRef.current?.focus();
+          setGeneralError(phoneErr);
+        } else if (otpErr) {
+          const firstEmpty = digits.findIndex((d) => !d);
+          if (firstEmpty >= 0) digitRefs.current[firstEmpty]?.focus();
+          setGeneralError(otpErr);
+        }
+        return;
+      }
+    } else {
+      if (phoneErr || otpErr) {
+        setTouched((prev) => ({ ...prev, phone: true, otp: true }));
+        setFieldErrors((prev) => ({ ...prev, phone: phoneErr, otp: otpErr }));
+        if (phoneErr) {
+          phoneInputRef.current?.focus();
+          setGeneralError(phoneErr);
+        } else if (otpErr) {
+          const firstEmpty = digits.findIndex((d) => !d);
+          if (firstEmpty >= 0) digitRefs.current[firstEmpty]?.focus();
+          setGeneralError(otpErr);
+        }
+        return;
+      }
     }
 
     setFieldErrors((prev) => ({ ...prev, otp: null }));
     setGeneralError(null);
     setBusy(true);
     try {
-      const cleanPhone = cleanPhoneNumber(phone);
-      await verifyOtp(cleanPhone, digits.join(''));
+      // 1. Authenticate with Firebase Auth and write user profile directly to Firestore 'users' database
+      console.log('[Auth] Authenticating and saving user to Firestore database "users"...');
+      const fbUser = await authenticateWithPhoneOrEmail({
+        phone: cleanPhone,
+        email: email.trim(),
+        fullName: fullName.trim(),
+        dob: dob.trim(),
+        isSignUp: activeTab === 'signup',
+      });
+      console.log('[Auth] Successfully created/authenticated user in Firestore:', fbUser.uid);
 
-      // If signing up, persist the profile data to AsyncStorage for app-wide use
+      // 2. Persist profile data to AsyncStorage & ProfileContext for app-wide use
       if (activeTab === 'signup') {
+        const userProfile = {
+          name: fullName.trim() || fbUser.displayName || 'User',
+          dob: dob.trim(),
+          email: email.trim() || fbUser.email || '',
+          phone: cleanPhone,
+          registeredAt: new Date().toISOString(),
+        };
         try {
-          const userProfile = {
-            name: fullName.trim(),
-            dob: dob.trim(),
-            email: email.trim(),
-            phone: cleanPhone,
-            registeredAt: new Date().toISOString(),
-          };
           await AsyncStorage.setItem('onebuddy:userProfile', JSON.stringify(userProfile));
         } catch (err) {
-          console.warn('Could not save user profile:', err);
+          console.warn('Could not save user profile to AsyncStorage:', err);
         }
+        updateProfile({
+          name: fullName.trim() || fbUser.displayName || 'User',
+          phone: cleanPhone,
+          email: email.trim() || fbUser.email || '',
+        });
+      } else {
+        updateProfile({
+          name: fbUser.displayName || 'User',
+          phone: cleanPhone,
+          email: fbUser.email || '',
+        });
       }
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'That code is not right. Try again.';
+
+      // 3. Now verify OTP and issue the session token so the app transitions to HomeScreen
+      await verifyOtp(cleanPhone, digits.join(''));
+    } catch (e: any) {
+      console.error('[Auth] Verification / save error:', e);
+      const message = e instanceof Error ? e.message : 'Verification failed. Please try again.';
       setTouched((prev) => ({ ...prev, otp: true }));
       setFieldErrors((prev) => ({ ...prev, otp: message }));
       setGeneralError(message);
       setBusy(false);
     }
-  }, [activeTab, digits, email, fullName, dob, phone, verifyOtp]);
+  }, [activeTab, digits, email, fullName, dob, phone, verifyOtp, authenticateWithPhoneOrEmail, updateProfile]);
+
+  const handleGoogleSignIn = useCallback(async () => {
+    setGeneralError(null);
+    setBusy(true);
+    try {
+      const googleUser = await signInWithGoogle();
+      const identifier = googleUser.phoneNumber || googleUser.email || cleanPhoneNumber(phone) || 'google_user';
+      await verifyOtp(identifier, 'GOOGLE_SSO');
+      updateProfile({
+        name: googleUser.displayName || 'Google User',
+        email: googleUser.email || '',
+        phone: googleUser.phoneNumber || '',
+      });
+    } catch (e: any) {
+      console.warn('Google sign-in error:', e);
+      if (e?.code !== 'auth/popup-closed-by-user') {
+        setGeneralError(e?.message || 'Google sign-in failed. Please try again.');
+      }
+      setBusy(false);
+    }
+  }, [signInWithGoogle, verifyOtp, updateProfile, phone]);
 
   const setDigit = useCallback((index: number, value: string) => {
     const clean = value.replace(/\D/g, '');
@@ -1375,8 +1457,10 @@ export default function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
   );
 
   const handleResend = useCallback(async () => {
-    if (secondsLeft > 0) return;
     const cleanPhone = cleanPhoneNumber(phone);
+    // Only enforce cooldown if resending to the EXACT same number as last sent
+    if (cleanPhone === lastSentPhone.current && secondsLeft > 0) return;
+
     const phoneErr = validatePhone(cleanPhone);
     if (phoneErr) {
       setTouched((prev) => ({ ...prev, phone: true }));
@@ -1386,37 +1470,11 @@ export default function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
       return;
     }
 
-    if (activeTab === 'signup') {
-      const nameErr = validateFullName(fullName);
-      const dobErr = validateDob(dob);
-      const emailErr = validateEmail(email);
-      if (nameErr || dobErr || emailErr) {
-        setTouched((prev) => ({
-          ...prev,
-          fullName: true,
-          dob: true,
-          email: true,
-          phone: true,
-        }));
-        setFieldErrors((prev) => ({
-          ...prev,
-          fullName: nameErr,
-          dob: dobErr,
-          email: emailErr,
-          phone: phoneErr,
-        }));
-        if (nameErr) fullNameInputRef.current?.focus();
-        else if (dobErr) dobInputRef.current?.focus();
-        else if (emailErr) emailInputRef.current?.focus();
-        setGeneralError('Please complete all sign-up fields before requesting OTP.');
-        return;
-      }
-    }
-
     setBusy(true);
     setGeneralError(null);
     try {
       await sendOtp(cleanPhone);
+      lastSentPhone.current = cleanPhone;
       setDigits(Array(OTP_LENGTH).fill(''));
       setSecondsLeft(OTP_RESEND_SECONDS);
       setFieldErrors((prev) => ({ ...prev, otp: null }));
@@ -1427,7 +1485,7 @@ export default function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
     } finally {
       setBusy(false);
     }
-  }, [activeTab, fullName, dob, email, phone, secondsLeft, sendOtp]);
+  }, [phone, secondsLeft, sendOtp]);
 
   const handleBack = useCallback(() => {
     if (step === 'otp') {
@@ -1481,11 +1539,13 @@ export default function AuthScreen({ navigation }: RootScreenProps<'Auth'>) {
     onVerify: handleVerify,
     onResend: handleResend,
     onOpenDatePicker: () => setShowDatePicker(true),
+    onGoogleSignIn: handleGoogleSignIn,
     digitRefs,
     fullNameInputRef,
     dobInputRef,
     emailInputRef,
     phoneInputRef,
+    hasSentOnce: !!lastSentPhone.current,
   };
 
   return (

@@ -11,13 +11,14 @@
  * `SettingsContext` for local settings.
  */
 import { FirebaseOptions, getApps, initializeApp } from 'firebase/app';
-import { Auth, initializeAuth } from 'firebase/auth';
+import { Auth, getAuth, initializeAuth } from 'firebase/auth';
 // @ts-ignore - getReactNativePersistence exists in React Native bundle of firebase/auth
 import { getReactNativePersistence } from 'firebase/auth';
 // eslint-disable-next-line import/no-unresolved
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Firestore,
+  getFirestore,
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
@@ -35,13 +36,16 @@ function readExtra(key: string): string | undefined {
 }
 
 const firebaseConfig: FirebaseOptions = {
-  apiKey: readExtra('EXPO_PUBLIC_FIREBASE_API_KEY'),
-  authDomain: readExtra('EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN'),
-  projectId: readExtra('EXPO_PUBLIC_FIREBASE_PROJECT_ID'),
-  storageBucket: readExtra('EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET'),
-  messagingSenderId: readExtra('EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'),
-  appId: readExtra('EXPO_PUBLIC_FIREBASE_APP_ID'),
+  apiKey: readExtra('EXPO_PUBLIC_FIREBASE_API_KEY') || 'AIzaSyC0i2PsCmk0H1pBYcF_cl5EYIrgFMHXY3Q',
+  authDomain: readExtra('EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN') || 'onebuddyuser.firebaseapp.com',
+  projectId: readExtra('EXPO_PUBLIC_FIREBASE_PROJECT_ID') || 'onebuddyuser',
+  storageBucket: readExtra('EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET') || 'onebuddyuser.firebasestorage.app',
+  messagingSenderId: readExtra('EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID') || '923658815455',
+  appId: readExtra('EXPO_PUBLIC_FIREBASE_APP_ID') || '1:923658815455:android:ebd8c179c923401583a66a',
 };
+
+export const FIRESTORE_DATABASE_ID =
+  readExtra('EXPO_PUBLIC_FIREBASE_DATABASE_ID') || 'users';
 
 export const firebaseConfigured = Boolean(
   firebaseConfig.apiKey && firebaseConfig.projectId
@@ -59,31 +63,48 @@ export const app = firebaseConfigured
   ? (getApps().length ? getApps()[0] : initializeApp(firebaseConfig))
   : (null as unknown as ReturnType<typeof initializeApp>);
 
+import { Platform } from 'react-native';
+
 let authInstance: Auth;
 if (firebaseConfigured && app) {
   try {
-    authInstance = initializeAuth(app, {
-      persistence: getReactNativePersistence(AsyncStorage),
-    });
+    if (Platform.OS === 'web') {
+      authInstance = getAuth(app);
+    } else {
+      authInstance = initializeAuth(app, {
+        persistence: getReactNativePersistence(AsyncStorage),
+      });
+    }
   } catch {
     // initializeAuth throws if it's already been called once for this app
     // (hot reload in dev). Fall back to the existing instance.
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    authInstance = require('firebase/auth').getAuth(app);
+    authInstance = getAuth(app);
   }
 } else {
   authInstance = null as unknown as Auth;
 }
 export const auth = authInstance;
 
-export const db: Firestore =
-  firebaseConfigured && app
-    ? initializeFirestore(app, {
+let firestoreInstance: Firestore;
+if (firebaseConfigured && app) {
+  try {
+    firestoreInstance = initializeFirestore(
+      app,
+      {
         localCache: persistentLocalCache({
           tabManager: persistentMultipleTabManager(),
         }),
-      })
-    : (null as unknown as Firestore);
+      },
+      FIRESTORE_DATABASE_ID
+    );
+  } catch {
+    firestoreInstance = getFirestore(app, FIRESTORE_DATABASE_ID);
+  }
+} else {
+  firestoreInstance = null as unknown as Firestore;
+}
+
+export const db: Firestore = firestoreInstance;
 
 export const storage =
   firebaseConfigured && app

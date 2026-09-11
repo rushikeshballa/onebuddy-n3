@@ -6,16 +6,18 @@ import React, {
   useState,
 } from 'react';
 import {
+  GoogleAuthProvider,
   User,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut as firebaseSignOut,
   updateProfile,
 } from 'firebase/auth';
 import { auth, firebaseConfigured } from '../config';
-import { ensureUserDocument } from '../services/userService';
+import { ensureUserDocument, findUserByPhone } from '../services/userService';
 
 interface AuthContextValue {
   user: User | null;
@@ -25,6 +27,14 @@ interface AuthContextValue {
   enabled: boolean;
   signUp: (name: string, email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<User>;
+  authenticateWithPhoneOrEmail: (params: {
+    phone: string;
+    email?: string;
+    fullName?: string;
+    dob?: string;
+    isSignUp: boolean;
+  }) => Promise<User>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 }
@@ -83,6 +93,86 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           await signInWithEmailAndPassword(auth, email, password);
         } catch (err) {
           throw mapAuthError(err);
+        }
+      },
+      async signInWithGoogle(): Promise<User> {
+        if (!auth) throw new Error('Firebase Auth is not configured');
+        try {
+          const provider = new GoogleAuthProvider();
+          provider.setCustomParameters({ prompt: 'select_account' });
+          const credential = await signInWithPopup(auth, provider);
+          if (credential.user) {
+            await ensureUserDocument(credential.user, credential.user.displayName || undefined, {
+              email: credential.user.email || undefined,
+              phone: credential.user.phoneNumber || undefined,
+            });
+          }
+          return credential.user;
+        } catch (err) {
+          throw mapAuthError(err);
+        }
+      },
+      async authenticateWithPhoneOrEmail({
+        phone,
+        email,
+        fullName,
+        dob,
+        isSignUp,
+      }): Promise<User> {
+        if (!auth) throw new Error('Firebase Auth is not configured');
+        const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+        const deterministicPassword = `OneBuddy#Auth_${cleanPhone}_2026`;
+
+        if (isSignUp) {
+          const targetEmail = (email && email.trim()) ? email.trim().toLowerCase() : `${cleanPhone}@onebuddy.app`;
+          let credUser: User;
+          try {
+            const cred = await createUserWithEmailAndPassword(auth, targetEmail, deterministicPassword);
+            credUser = cred.user;
+          } catch (err: any) {
+            if (err?.code === 'auth/email-already-in-use') {
+              const cred = await signInWithEmailAndPassword(auth, targetEmail, deterministicPassword);
+              credUser = cred.user;
+            } else {
+              throw mapAuthError(err);
+            }
+          }
+          if (fullName && fullName.trim()) {
+            try {
+              await updateProfile(credUser, { displayName: fullName.trim() });
+            } catch {}
+          }
+          await ensureUserDocument(credUser, fullName?.trim(), {
+            phone: cleanPhone,
+            email: targetEmail,
+            dob: dob?.trim(),
+          });
+          return credUser;
+        } else {
+          // Login flow
+          const existing = await findUserByPhone(cleanPhone);
+          const targetEmail = (existing?.email && existing.email.includes('@'))
+            ? existing.email.toLowerCase()
+            : `${cleanPhone}@onebuddy.app`;
+
+          let credUser: User;
+          try {
+            const cred = await signInWithEmailAndPassword(auth, targetEmail, deterministicPassword);
+            credUser = cred.user;
+          } catch (err: any) {
+            if (err?.code === 'auth/user-not-found' || err?.code === 'auth/invalid-credential') {
+              const cred = await createUserWithEmailAndPassword(auth, targetEmail, deterministicPassword);
+              credUser = cred.user;
+            } else {
+              throw mapAuthError(err);
+            }
+          }
+          await ensureUserDocument(credUser, existing?.name || credUser.displayName || undefined, {
+            phone: cleanPhone,
+            email: targetEmail,
+            dob: (existing as any)?.dob || undefined,
+          });
+          return credUser;
         }
       },
       async signOut() {

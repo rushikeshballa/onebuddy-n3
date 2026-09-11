@@ -18,6 +18,7 @@ import {
 } from '@react-navigation/native';
 import { useAppTheme } from '@/theme/ThemeContext';
 import { applyCategoryTheme } from '@/theme/categoryThemeBridge';
+import { FoodDataProvider } from '../categories/food/context/FoodDataContext';
 import { CartProvider } from '../categories/food/context/CartContext';
 import { FilterProvider } from '../categories/food/context/FilterContext';
 import { FoodExitContext } from '../categories/food/context/FoodExitContext';
@@ -152,20 +153,22 @@ export default function FoodHost({
         {!isReady ? (
           <FoodLoadingScreen isDark={isDark} />
         ) : (
-          <CartProvider>
-            <FilterProvider>
-              <FoodExitContext.Provider value={{ onClose }}>
-                <NavigationIndependentTree>
-                  <NavigationContainer
-                    ref={navigationRef}
-                    theme={navigationTheme}
-                  >
-                    <RootNavigator />
-                  </NavigationContainer>
-                </NavigationIndependentTree>
-              </FoodExitContext.Provider>
-            </FilterProvider>
-          </CartProvider>
+          <FoodDataProvider>
+            <CartProvider>
+              <FilterProvider>
+                <FoodExitContext.Provider value={{ onClose }}>
+                  <NavigationIndependentTree>
+                    <NavigationContainer
+                      ref={navigationRef}
+                      theme={navigationTheme}
+                    >
+                      <RootNavigator />
+                    </NavigationContainer>
+                  </NavigationIndependentTree>
+                </FoodExitContext.Provider>
+              </FilterProvider>
+            </CartProvider>
+          </FoodDataProvider>
         )}
       </SafeAreaProvider>
     </View>

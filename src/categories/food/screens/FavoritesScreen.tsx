@@ -7,7 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useCart } from '../context/CartContext';
-import { RESTAURANTS_DATA } from '../data/restaurantsData';
+import { useFoodData } from '../context/FoodDataContext';
 import { RestaurantCard } from '../components/home/RestaurantCard';
 import { Heart } from 'lucide-react-native';
 
@@ -21,7 +21,8 @@ export const FavoritesScreen: React.FC<FavoritesScreenProps> = ({
   onNavigateHome,
 }) => {
   const { favorites } = useCart();
-  const favoriteRestaurants = RESTAURANTS_DATA.filter((r) => favorites.includes(r.id));
+  const { restaurants } = useFoodData();
+  const favoriteRestaurants = restaurants.filter((r) => favorites.includes(r.id));
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>

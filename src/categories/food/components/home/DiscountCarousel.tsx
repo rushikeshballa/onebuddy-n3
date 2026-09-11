@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,10 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
   FlatList,
+  ActivityIndicator,
 } from 'react-native';
-import { BANNER_OFFERS_DATA } from '../../data/bannerOffersData';
+import { OfferBanner } from '../../types';
+import { useFoodData } from '../../context/FoodDataContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Sparkles, Tag, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { useCart } from '../../context/CartContext';
@@ -24,18 +26,35 @@ interface DiscountCarouselProps {
 }
 
 export const DiscountCarousel: React.FC<DiscountCarouselProps> = ({ onSelectRestaurant }) => {
-  const originalLength = BANNER_OFFERS_DATA.length;
+  const { banners, isLoading } = useFoodData();
+  const originalLength = banners.length;
   // Create 3 sets of data for infinite scrolling illusion
-  const loopedData = [...BANNER_OFFERS_DATA, ...BANNER_OFFERS_DATA, ...BANNER_OFFERS_DATA];
+  const loopedData = useMemo(() => {
+    if (banners.length === 0) return [];
+    return [...banners, ...banners, ...banners];
+  }, [banners]);
   
-  const [currentIndex, setCurrentIndex] = useState(originalLength);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const { applyCoupon } = useCart();
   const [isAutoPlay, setIsAutoPlay] = useState(true);
 
+  useEffect(() => {
+    if (originalLength > 0) {
+      setCurrentIndex(originalLength);
+      const timer = setTimeout(() => {
+        flatListRef.current?.scrollToOffset({
+          offset: originalLength * ITEM_WIDTH,
+          animated: false,
+        });
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [originalLength]);
+
   // Auto-slide
   useEffect(() => {
-    if (!isAutoPlay) return;
+    if (!isAutoPlay || originalLength === 0) return;
     
     const timer = setInterval(() => {
       let nextIndex = currentIndex + 1;
@@ -155,7 +174,7 @@ export const DiscountCarousel: React.FC<DiscountCarouselProps> = ({ onSelectRest
     return () => clearTimeout(timer);
   }, []);
 
-  const renderItem = ({ item, index }: { item: typeof BANNER_OFFERS_DATA[0], index: number }) => (
+  const renderItem = ({ item }: { item: OfferBanner; index: number }) => (
     <View style={{ width: ITEM_WIDTH, paddingHorizontal: 16 }}>
       <TouchableOpacity
         activeOpacity={0.9}
@@ -188,6 +207,17 @@ export const DiscountCarousel: React.FC<DiscountCarouselProps> = ({ onSelectRest
     </View>
   );
 
+  if (banners.length === 0) {
+    if (isLoading) {
+      return (
+        <View style={[styles.wrapper, { height: 180, justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator color="#65A30D" />
+        </View>
+      );
+    }
+    return null;
+  }
+
   const activeIndicatorIndex = currentIndex % originalLength;
 
   return (
@@ -217,7 +247,7 @@ export const DiscountCarousel: React.FC<DiscountCarouselProps> = ({ onSelectRest
       />
 
       <View style={styles.indicatorRow}>
-        {BANNER_OFFERS_DATA.map((_, idx) => (
+        {banners.map((_, idx) => (
           <View
             key={idx}
             style={[

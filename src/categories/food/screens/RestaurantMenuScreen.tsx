@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { RESTAURANTS_DATA } from '../data/restaurantsData';
+import { useFoodData } from '../context/FoodDataContext';
 import { MenuHeader } from '../components/menu/MenuHeader';
 import { MenuFilterBar } from '../components/menu/MenuFilterBar';
 import { MenuItemCard } from '../components/menu/MenuItemCard';
@@ -20,9 +20,10 @@ export const RestaurantMenuScreen: React.FC<RestaurantMenuScreenProps> = ({
   onBack,
 }) => {
   const insets = useSafeAreaInsets();
+  const { restaurants, isLoading } = useFoodData();
   const restaurant = useMemo(() => {
-    return RESTAURANTS_DATA.find((r) => r.id === restaurantId) || RESTAURANTS_DATA[0];
-  }, [restaurantId]);
+    return restaurants.find((r) => r.id === restaurantId) || restaurants[0];
+  }, [restaurants, restaurantId]);
 
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -35,14 +36,17 @@ export const RestaurantMenuScreen: React.FC<RestaurantMenuScreenProps> = ({
 
 
   const categories = useMemo(() => {
+    if (!restaurant?.menu) return [];
     return Array.from(new Set(restaurant.menu.map((m) => m.category)));
   }, [restaurant]);
 
   const signatureCombo = useMemo(() => {
+    if (!restaurant?.menu) return null;
     return restaurant.menu.find((m) => m.isCombo) || null;
   }, [restaurant]);
 
   const filteredMenuItems = useMemo(() => {
+    if (!restaurant?.menu) return [];
     return restaurant.menu
       .filter((item) => {
         if (menuSearchQuery.trim()) {
@@ -92,6 +96,21 @@ export const RestaurantMenuScreen: React.FC<RestaurantMenuScreenProps> = ({
       return 'none';
     });
   };
+
+  if (!restaurant) {
+    if (isLoading) {
+      return (
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color="#65A30D" />
+        </View>
+      );
+    }
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
+        <Text style={{ fontSize: 16, color: '#6B7280', marginBottom: 12 }}>Restaurant not found</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView ref={scrollViewRef} style={styles.container} showsVerticalScrollIndicator={false}>

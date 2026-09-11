@@ -106,6 +106,19 @@ if (firebaseConfigured && app) {
 
 export const db: Firestore = firestoreInstance;
 
+let foodFirestoreInstance: Firestore;
+if (firebaseConfigured && app) {
+  try {
+    foodFirestoreInstance = getFirestore(app, 'onebuddyfood');
+  } catch {
+    foodFirestoreInstance = null as unknown as Firestore;
+  }
+} else {
+  foodFirestoreInstance = null as unknown as Firestore;
+}
+
+export const foodDb: Firestore = foodFirestoreInstance;
+
 export const storage =
   firebaseConfigured && app
     ? getStorage(app)

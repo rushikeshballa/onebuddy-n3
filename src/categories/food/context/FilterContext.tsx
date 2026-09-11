@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useMemo } from 'react';
 import { FilterState, Restaurant } from '../types';
-import { RESTAURANTS_DATA } from '../data/restaurantsData';
+import { useFoodData } from './FoodDataContext';
 
 interface FilterContextType {
   filters: FilterState;
@@ -28,6 +28,7 @@ const defaultFilters: FilterState = {
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
 export const FilterProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { restaurants } = useFoodData();
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const [searchFocusTrigger, setSearchFocusTrigger] = useState(0);
@@ -57,7 +58,7 @@ export const FilterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [filters]);
 
   const filteredRestaurants = useMemo(() => {
-    return RESTAURANTS_DATA.filter((r) => {
+    return restaurants.filter((r) => {
       if (filters.searchQuery.trim()) {
         const q = filters.searchQuery.toLowerCase().trim();
         const normalizedQ = q.endsWith('s') ? q.slice(0, -1) : q;
@@ -137,7 +138,7 @@ export const FilterProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           return (b.promoted ? 1 : 0) - (a.promoted ? 1 : 0);
       }
     });
-  }, [filters]);
+  }, [filters, restaurants]);
 
   return (
     <FilterContext.Provider

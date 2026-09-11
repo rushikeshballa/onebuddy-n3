@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CartItem, MenuItem, Order, Restaurant } from '../types';
-import { RESTAURANTS_DATA } from '../data/restaurantsData';
+import { useFoodData } from './FoodDataContext';
 
 const safeStorage = {
   getItem: async (key: string) => {
@@ -69,6 +69,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { restaurants } = useFoodData();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [currentRestaurantId, setCurrentRestaurantId] = useState<string | null>(null);
   const [couponCode, setCouponCode] = useState<string>('');
@@ -138,7 +139,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }>({ isOpen: false });
 
   const currentRestaurant = currentRestaurantId
-    ? RESTAURANTS_DATA.find((r) => r.id === currentRestaurantId) || null
+    ? restaurants.find((r) => r.id === currentRestaurantId) || null
     : null;
 
   const totalItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);

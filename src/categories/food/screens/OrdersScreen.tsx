@@ -14,7 +14,7 @@ import {
   Bike,
   RotateCw,
 } from 'lucide-react-native';
-import { RESTAURANTS_DATA } from '../data/restaurantsData';
+import { useFoodData } from '../context/FoodDataContext';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface OrdersScreenProps {
@@ -27,12 +27,13 @@ export const OrdersScreen: React.FC<OrdersScreenProps> = ({
   onNavigateHome,
 }) => {
   const { orders, addToCart } = useCart();
+  const { restaurants } = useFoodData();
 
   const handleReorder = (orderId: string) => {
     const targetOrder = orders.find((o) => o.orderId === orderId);
     if (!targetOrder) return;
 
-    const rest = RESTAURANTS_DATA.find((r) => r.id === targetOrder.restaurant.id) || targetOrder.restaurant;
+    const rest = restaurants.find((r) => r.id === targetOrder.restaurant.id) || targetOrder.restaurant;
 
     targetOrder.items.forEach((ci) => {
       addToCart(ci.item, rest, ci.quantity);

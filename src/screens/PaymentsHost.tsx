@@ -16,8 +16,9 @@ import {
 } from '../firebase/services/paymentsService';
 
 interface PaymentsHostProps {
-  visible: boolean;
+  visible?: boolean;
   onClose: () => void;
+  asModal?: boolean;
 }
 
 /**
@@ -31,7 +32,11 @@ interface PaymentsHostProps {
  * every change. Signed out, the screen falls back to its own local mock
  * data exactly as before.
  */
-export default function PaymentsHost({ visible, onClose }: PaymentsHostProps): React.JSX.Element {
+export default function PaymentsHost({
+  visible = true,
+  onClose,
+  asModal = false,
+}: PaymentsHostProps): React.JSX.Element {
   const { user, enabled } = useAuth();
   const { colors: themeColors, scheme } = useAppTheme();
   const [walletBalance, setWalletBalance] = useState<number | undefined>(undefined);
@@ -112,31 +117,39 @@ export default function PaymentsHost({ visible, onClose }: PaymentsHostProps): R
     }
   };
 
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="fullScreen"
-      onRequestClose={handleRequestClose}
-      // Remounting on each open gives the screen a clean start, matching the
-      // other native hosts.
-      key={visible ? 'payments-open' : 'payments-closed'}
-    >
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: themeColors.sheetBg }]}>
-        <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
-        <PaymentsScreen
-          ref={paymentsRef}
-          onBack={onClose}
-          initialWalletBalance={walletBalance}
-          initialCards={cards}
-          initialUpiHandles={upiHandles}
-          onAddMoney={handleAddMoney}
-          onCardsChange={handleCardsChange}
-          onUpiChange={handleUpiChange}
-        />
-      </SafeAreaView>
-    </Modal>
+  const content = (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: themeColors.sheetBg }]}>
+      <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
+      <PaymentsScreen
+        ref={paymentsRef}
+        onBack={onClose}
+        initialWalletBalance={walletBalance}
+        initialCards={cards}
+        initialUpiHandles={upiHandles}
+        onAddMoney={handleAddMoney}
+        onCardsChange={handleCardsChange}
+        onUpiChange={handleUpiChange}
+      />
+    </SafeAreaView>
   );
+
+  if (asModal) {
+    return (
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={handleRequestClose}
+        // Remounting on each open gives the screen a clean start, matching the
+        // other native hosts.
+        key={visible ? 'payments-open' : 'payments-closed'}
+      >
+        {content}
+      </Modal>
+    );
+  }
+
+  return content;
 }
 
 const styles = StyleSheet.create({

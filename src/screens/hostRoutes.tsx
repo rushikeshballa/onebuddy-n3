@@ -11,21 +11,15 @@ import NotificationsHost from './NotificationsHost';
 import GroceriesHost from './GroceriesHost';
 import FoodHost from './FoodHost';
 import ServicePreferencesHost from './ServicePreferencesHost';
+import EditProfileSheet from '@/components/EditProfileSheet';
 
 /**
- * The ten host components were written for the WebView era: each is a
- * full-screen `Modal` driven by `visible` + `onClose`, opened by a
- * `postMessage` from the document.
+ * The host components were written for the WebView era: each was a
+ * full-screen `Modal` driven by `visible` + `onClose`.
  *
- * Rather than rewrite ten working screens, each is mounted here as a route
- * that is always `visible` and whose `onClose` pops the stack. The stack
- * screens themselves are registered with `headerShown: false` and
- * `animation: 'none'`, so the Modal's own slide is the only transition —
- * no double animation.
- *
- * `onChange` callbacks that used to push state back into the document are
- * dropped: settings, addresses and security now read and write the shared
- * providers mounted at the app root, so there is nothing to mirror.
+ * For settings pages, passing `asModal={false}` renders the screen content
+ * directly into the stack route, allowing React Navigation's native
+ * `slide_from_right` push transition to handle the slide animation cleanly.
  */
 function useDismiss(): () => void {
   const navigation = useNavigation();
@@ -35,31 +29,31 @@ function useDismiss(): () => void {
 }
 
 export function SecurityPrivacyRoute() {
-  return <SecurityPrivacyHost visible seed={null} onChange={() => {}} onClose={useDismiss()} />;
+  return <SecurityPrivacyHost visible seed={null} onChange={() => {}} onClose={useDismiss()} asModal={false} />;
 }
 
 export function HelpSupportRoute() {
-  return <HelpSupportHost visible onClose={useDismiss()} />;
+  return <HelpSupportHost visible onClose={useDismiss()} asModal={false} />;
 }
 
 export function AboutRoute() {
-  return <AboutHost visible onClose={useDismiss()} />;
+  return <AboutHost visible onClose={useDismiss()} asModal={false} />;
 }
 
 export function PaymentsRoute() {
-  return <PaymentsHost visible onClose={useDismiss()} />;
+  return <PaymentsHost visible onClose={useDismiss()} asModal={false} />;
 }
 
 export function OrdersRoute() {
-  return <OrdersHost visible onClose={useDismiss()} onAction={() => {}} />;
+  return <OrdersHost visible onClose={useDismiss()} onAction={() => {}} asModal={false} />;
 }
 
 export function AddressesRoute() {
-  return <AddressHost visible onChange={() => {}} onClose={useDismiss()} />;
+  return <AddressHost visible onChange={() => {}} onClose={useDismiss()} asModal={false} />;
 }
 
 export function NotificationsRoute() {
-  return <NotificationsHost visible onClose={useDismiss()} />;
+  return <NotificationsHost visible onClose={useDismiss()} asModal={false} />;
 }
 
 export function GroceriesRoute() {
@@ -71,5 +65,9 @@ export function FoodRoute() {
 }
 
 export function ServicePreferencesRoute() {
-  return <ServicePreferencesHost visible onClose={useDismiss()} />;
+  return <ServicePreferencesHost visible onClose={useDismiss()} asModal={false} />;
+}
+
+export function EditProfileRoute() {
+  return <EditProfileSheet visible onClose={useDismiss()} asModal={false} />;
 }

@@ -5,13 +5,14 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import { Check, X } from 'lucide-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { X, Check, ChevronLeft } from 'lucide-react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import BuddyAvatar from './BuddyAvatar';
 import {
@@ -24,13 +25,14 @@ import { schemes } from '@/design/tokens';
 import { useAppTheme } from '@/theme/ThemeContext';
 
 interface EditProfileSheetProps {
-  visible: boolean;
+  visible?: boolean;
   onClose: () => void;
+  asModal?: boolean;
 }
 
 const BRAND_GREEN = '#65B200';
 
-export default function EditProfileSheet({ visible, onClose }: EditProfileSheetProps) {
+export default function EditProfileSheet({ visible = true, onClose, asModal = true }: EditProfileSheetProps) {
   const { scheme } = useAppTheme();
   const tokens = schemes[scheme];
   const insets = useSafeAreaInsets();
@@ -93,6 +95,231 @@ export default function EditProfileSheet({ visible, onClose }: EditProfileSheetP
   const styleLabel = currentStyleObj ? `${currentStyleObj.name} style` : 'Classic style';
   const isDark = scheme === 'dark';
 
+  const bodyContent = (
+    <View
+      style={[
+        asModal ? styles.sheet : styles.standalonePage,
+        {
+          backgroundColor: isDark ? tokens.surface1 : '#F7FAF3',
+          paddingBottom: insets.bottom + 24,
+        },
+      ]}
+    >
+      {/* Top Grab Handle */}
+      {asModal && (
+        <View style={styles.handleContainer}>
+          <View style={[styles.handle, { backgroundColor: isDark ? tokens.ink(0.2) : '#D4D8CF' }]} />
+        </View>
+      )}
+
+      {/* Header Bar */}
+      <View style={styles.header}>
+        {!asModal ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+            onPress={handleClose}
+            style={[styles.backBtn, { backgroundColor: isDark ? tokens.surface2 : '#E6ECE0' }]}
+          >
+            <ChevronLeft size={20} color={tokens.text} strokeWidth={2.4} />
+          </Pressable>
+        ) : null}
+        <Text style={[styles.headerTitle, { color: tokens.text, flex: 1, textAlign: asModal ? 'left' : 'center' }]}>
+          Edit profile
+        </Text>
+        {asModal ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close edit profile"
+            onPress={handleClose}
+            style={[styles.closeBtn, { backgroundColor: isDark ? tokens.surface2 : '#E6ECE0' }]}
+          >
+            <X size={18} color={tokens.text} strokeWidth={2.4} />
+          </Pressable>
+        ) : (
+          <View style={{ width: 36 }} />
+        )}
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Live Profile Preview Card */}
+        <View style={styles.previewCard}>
+          <View style={styles.avatarWrap}>
+            <BuddyAvatar
+              size={82}
+              styleId={draftStyle}
+              color={draftColor}
+              borderRadius={24}
+            />
+          </View>
+          <View style={styles.previewMeta}>
+            <Text style={[styles.previewName, { color: tokens.text }]}>
+              {draftName.trim() || 'User 8225'}
+            </Text>
+            <Text style={[styles.previewStyle, { color: isDark ? tokens.textDim : '#737C70' }]}>
+              {styleLabel}
+            </Text>
+          </View>
+        </View>
+
+        {/* Input: Name */}
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.fieldLabel, { color: isDark ? tokens.textDim : '#757E72' }]}>
+            NAME
+          </Text>
+          <TextInput
+            value={draftName}
+            onChangeText={handleChangeName}
+            placeholder="User 8225"
+            placeholderTextColor={tokens.textDim}
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: isDark ? tokens.surface2 : '#E8EFE2',
+                color: tokens.text,
+                borderColor: 'transparent',
+              },
+            ]}
+          />
+        </View>
+
+        {/* Input: Phone */}
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.fieldLabel, { color: isDark ? tokens.textDim : '#757E72' }]}>
+            PHONE
+          </Text>
+          <TextInput
+            value={draftPhone}
+            onChangeText={handleChangePhone}
+            placeholder="7013138225"
+            placeholderTextColor={tokens.textDim}
+            keyboardType="phone-pad"
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: isDark ? tokens.surface2 : '#E8EFE2',
+                color: tokens.text,
+                borderColor: 'transparent',
+              },
+            ]}
+          />
+        </View>
+
+        {/* Input: Email */}
+        <View style={styles.fieldGroup}>
+          <Text style={[styles.fieldLabel, { color: isDark ? tokens.textDim : '#757E72' }]}>
+            EMAIL
+          </Text>
+          <TextInput
+            value={draftEmail}
+            onChangeText={handleChangeEmail}
+            placeholder="you@example.com"
+            placeholderTextColor={tokens.textDim}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            style={[
+              styles.textInput,
+              {
+                backgroundColor: isDark ? tokens.surface2 : '#E8EFE2',
+                color: tokens.text,
+                borderColor: 'transparent',
+              },
+            ]}
+          />
+        </View>
+
+        {/* Avatar Style Picker */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionHeading, { color: isDark ? tokens.textDim : '#757E72' }]}>
+            AVATAR STYLE
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.styleRow}
+          >
+            {AVATAR_STYLES.map((s) => {
+              const isSelected = s.id === draftStyle;
+              return (
+                <Pressable
+                  key={s.id}
+                  onPress={() => handleSelectStyle(s.id)}
+                  style={[
+                    styles.styleOption,
+                    isSelected && styles.styleOptionSelected,
+                  ]}
+                >
+                  <BuddyAvatar
+                    size={64}
+                    styleId={s.id}
+                    color={draftColor}
+                    borderRadius={16}
+                  />
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Color Picker */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionHeading, { color: isDark ? tokens.textDim : '#757E72' }]}>
+            BACKGROUND COLOR
+          </Text>
+          <View style={styles.colorGrid}>
+            {AVATAR_COLORS.map((c) => {
+              const isSelected = c.id === draftColor;
+              return (
+                <Pressable
+                  key={c.id}
+                  onPress={() => handleSelectColor(c.id)}
+                  style={[
+                    styles.colorSwatch,
+                    { backgroundColor: c.hex },
+                    isSelected && styles.colorSwatchSelected,
+                  ]}
+                >
+                  {isSelected && (
+                    <Check
+                      size={18}
+                      color={c.id === 'sun' || c.id === 'lime' ? '#1F2937' : '#FFFFFF'}
+                      strokeWidth={3}
+                    />
+                  )}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* CTA: Save */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Save edits"
+          onPress={handleClose}
+          style={({ pressed }) => [
+            styles.saveButton,
+            pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
+          ]}
+        >
+          <Text style={styles.saveButtonText}>Save Edits</Text>
+        </Pressable>
+      </ScrollView>
+    </View>
+  );
+
+  if (!asModal) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: isDark ? tokens.surface1 : '#F7FAF3' }} edges={['top', 'bottom']}>
+        <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
+        {bodyContent}
+      </SafeAreaView>
+    );
+  }
+
   return (
     <Modal
       visible={visible}
@@ -105,202 +332,7 @@ export default function EditProfileSheet({ visible, onClose }: EditProfileSheetP
         style={styles.backdrop}
       >
         <Pressable style={styles.scrimPressable} onPress={handleClose} />
-
-        <View
-          style={[
-            styles.sheet,
-            {
-              backgroundColor: isDark ? tokens.surface1 : '#F7FAF3',
-              paddingBottom: insets.bottom + 24,
-            },
-          ]}
-        >
-          {/* Top Grab Handle */}
-          <View style={styles.handleContainer}>
-            <View style={[styles.handle, { backgroundColor: isDark ? tokens.ink(0.2) : '#D4D8CF' }]} />
-          </View>
-
-          {/* Header Bar */}
-          <View style={styles.header}>
-            <Text style={[styles.headerTitle, { color: tokens.text }]}>Edit profile</Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close edit profile"
-              onPress={handleClose}
-              style={[styles.closeBtn, { backgroundColor: isDark ? tokens.surface2 : '#E6ECE0' }]}
-            >
-              <X size={18} color={tokens.text} strokeWidth={2.4} />
-            </Pressable>
-          </View>
-
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
-          >
-            {/* Live Profile Preview Card */}
-            <View style={styles.previewCard}>
-              <View style={styles.avatarWrap}>
-                <BuddyAvatar
-                  size={82}
-                  styleId={draftStyle}
-                  color={draftColor}
-                  borderRadius={24}
-                />
-              </View>
-              <View style={styles.previewMeta}>
-                <Text style={[styles.previewName, { color: tokens.text }]}>
-                  {draftName.trim() || 'User 8225'}
-                </Text>
-                <Text style={[styles.previewStyle, { color: isDark ? tokens.textDim : '#737C70' }]}>
-                  {styleLabel}
-                </Text>
-              </View>
-            </View>
-
-            {/* Input: Name */}
-            <View style={styles.fieldGroup}>
-              <Text style={[styles.fieldLabel, { color: isDark ? tokens.textDim : '#757E72' }]}>
-                NAME
-              </Text>
-              <TextInput
-                value={draftName}
-                onChangeText={handleChangeName}
-                placeholder="User 8225"
-                placeholderTextColor={tokens.textDim}
-                style={[
-                  styles.textInput,
-                  {
-                    backgroundColor: isDark ? tokens.surface2 : '#E8EFE2',
-                    color: tokens.text,
-                    borderColor: 'transparent',
-                  },
-                ]}
-              />
-            </View>
-
-            {/* Input: Phone */}
-            <View style={styles.fieldGroup}>
-              <Text style={[styles.fieldLabel, { color: isDark ? tokens.textDim : '#757E72' }]}>
-                PHONE
-              </Text>
-              <TextInput
-                value={draftPhone}
-                onChangeText={handleChangePhone}
-                placeholder="7013138225"
-                placeholderTextColor={tokens.textDim}
-                keyboardType="phone-pad"
-                style={[
-                  styles.textInput,
-                  {
-                    backgroundColor: isDark ? tokens.surface2 : '#E8EFE2',
-                    color: tokens.text,
-                    borderColor: 'transparent',
-                  },
-                ]}
-              />
-            </View>
-
-            {/* Input: Email */}
-            <View style={styles.fieldGroup}>
-              <Text style={[styles.fieldLabel, { color: isDark ? tokens.textDim : '#757E72' }]}>
-                EMAIL
-              </Text>
-              <TextInput
-                value={draftEmail}
-                onChangeText={handleChangeEmail}
-                placeholder="you@example.com"
-                placeholderTextColor={tokens.textDim}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                style={[
-                  styles.textInput,
-                  {
-                    backgroundColor: isDark ? tokens.surface2 : '#E8EFE2',
-                    color: tokens.text,
-                    borderColor: 'transparent',
-                  },
-                ]}
-              />
-            </View>
-
-            {/* Avatar Style Selector */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionHeading, { color: isDark ? tokens.textDim : '#757E72' }]}>
-                AVATAR STYLE
-              </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.styleRow}
-              >
-                {AVATAR_STYLES.map((st) => {
-                  const selected = st.id === draftStyle;
-                  return (
-                    <Pressable
-                      key={st.id}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${st.name} avatar style`}
-                      onPress={() => handleSelectStyle(st.id)}
-                      style={[
-                        styles.styleOption,
-                        selected && styles.styleOptionSelected,
-                      ]}
-                    >
-                      <BuddyAvatar
-                        size={64}
-                        styleId={st.id}
-                        color={draftColor}
-                        borderRadius={16}
-                      />
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-            </View>
-
-            {/* Background Colour Selector */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionHeading, { color: isDark ? tokens.textDim : '#757E72' }]}>
-                BACKGROUND COLOUR
-              </Text>
-              <View style={styles.colorGrid}>
-                {AVATAR_COLORS.map((c) => {
-                  const selected = c.hex.toLowerCase() === draftColor.toLowerCase();
-                  return (
-                    <Pressable
-                      key={c.id}
-                      accessibilityRole="button"
-                      accessibilityLabel={`${c.name} background color`}
-                      onPress={() => handleSelectColor(c.hex)}
-                      style={[
-                        styles.colorSwatch,
-                        { backgroundColor: c.hex },
-                        selected && styles.colorSwatchSelected,
-                      ]}
-                    >
-                      {selected && (
-                        <Check size={18} color="#15121F" strokeWidth={3} />
-                      )}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-
-            {/* Save Edits Button */}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Save edits"
-              onPress={handleClose}
-              style={({ pressed }) => [
-                styles.saveButton,
-                pressed && { opacity: 0.88, transform: [{ scale: 0.98 }] },
-              ]}
-            >
-              <Text style={styles.saveButtonText}>Save Edits</Text>
-            </Pressable>
-          </ScrollView>
-        </View>
+        {bodyContent}
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -321,6 +353,18 @@ const styles = StyleSheet.create({
     maxHeight: '88%',
     paddingTop: 10,
     paddingHorizontal: 22,
+  },
+  standalonePage: {
+    flex: 1,
+    paddingTop: 10,
+    paddingHorizontal: 22,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   handleContainer: {
     alignItems: 'center',

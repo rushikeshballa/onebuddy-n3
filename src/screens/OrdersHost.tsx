@@ -9,9 +9,10 @@ import { useAppTheme } from '../theme/ThemeContext';
 import { listOrders, runOrderAction } from '../firebase/services/ordersService';
 
 interface OrdersHostProps {
-  visible: boolean;
+  visible?: boolean;
   onClose: () => void;
   onAction: (actionLabel: string, order: OrderCard) => void;
+  asModal?: boolean;
 }
 
 /**
@@ -25,9 +26,10 @@ interface OrdersHostProps {
  * state before the action is relayed up to the document for its toast.
  */
 export default function OrdersHost({
-  visible,
+  visible = true,
   onClose,
   onAction,
+  asModal = false,
 }: OrdersHostProps): React.JSX.Element {
   const { user, enabled } = useAuth();
   const { colors: themeColors, scheme } = useAppTheme();
@@ -68,22 +70,30 @@ export default function OrdersHost({
     onAction(actionLabel, order);
   };
 
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="fullScreen"
-      onRequestClose={onClose}
-      // Remounting on each open gives the screen a clean start (tab back to
-      // "All"), matching the other native hosts.
-      key={visible ? 'orders-open' : 'orders-closed'}
-    >
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: themeColors.sheetBg }]}>
-        <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
-        <OrdersAndBookings orders={orders} onClose={onClose} onAction={handleAction} />
-      </SafeAreaView>
-    </Modal>
+  const content = (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: themeColors.sheetBg }]}>
+      <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
+      <OrdersAndBookings orders={orders} onClose={onClose} onAction={handleAction} />
+    </SafeAreaView>
   );
+
+  if (asModal) {
+    return (
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={onClose}
+        // Remounting on each open gives the screen a clean start (tab back to
+        // "All"), matching the other native hosts.
+        key={visible ? 'orders-open' : 'orders-closed'}
+      >
+        {content}
+      </Modal>
+    );
+  }
+
+  return content;
 }
 
 const styles = StyleSheet.create({

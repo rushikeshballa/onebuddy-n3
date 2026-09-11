@@ -21,7 +21,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, typography, spacing } from '../theme';
+import { colors, typography, spacing, useGroceryColors, darkColors, lightColors } from '../theme';
+import { isCategoryDark } from '@/theme/categoryThemeBridge';
 import { products as allProducts } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { useUser } from '../context/UserContext';
@@ -71,28 +72,28 @@ const DEFAULT_SAVED_ADDRESSES: SavedAddressItem[] = [
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const COLORS = {
-  background: colors.background,
-  surface: colors.cardBackground,
-  accent: colors.primary,
-  accentDark: colors.primaryDark,
-  accentLight: colors.primaryLight,
-  accentMedium: colors.primaryMedium,
-  secondary: colors.secondary,
-  secondaryDark: colors.secondaryDark,
-  secondaryLight: colors.secondaryLight,
-  softHighlight: colors.primaryLight,
-  textPrimary: colors.textPrimary,
-  textSecondary: colors.textSecondary,
-  textMuted: colors.textMuted,
-  border: colors.border,
-  borderLight: colors.borderLight,
-  error: colors.danger,
-  errorLight: colors.dangerLight,
-  success: colors.success,
-  successLight: colors.successLight,
-  warning: colors.warning,
-  warningLight: colors.warningLight,
-  white: colors.white,
+  get background() { return colors.background; },
+  get surface() { return colors.cardBackground; },
+  get accent() { return colors.primary; },
+  get accentDark() { return colors.primaryDark; },
+  get accentLight() { return colors.primaryLight; },
+  get accentMedium() { return colors.primaryMedium; },
+  get secondary() { return colors.secondary; },
+  get secondaryDark() { return colors.secondaryDark; },
+  get secondaryLight() { return colors.secondaryLight; },
+  get softHighlight() { return colors.primaryLight; },
+  get textPrimary() { return colors.textPrimary; },
+  get textSecondary() { return colors.textSecondary; },
+  get textMuted() { return colors.textMuted; },
+  get border() { return colors.border; },
+  get borderLight() { return colors.borderLight; },
+  get error() { return colors.danger; },
+  get errorLight() { return colors.dangerLight; },
+  get success() { return colors.success; },
+  get successLight() { return colors.successLight; },
+  get warning() { return colors.warning; },
+  get warningLight() { return colors.warningLight; },
+  get white() { return colors.white; },
   cardRadius: spacing.borderRadius.md,
   pillRadius: 20,
 };
@@ -327,6 +328,15 @@ export interface CartScreenProps {
 }
 
 export const CartScreen: React.FC<CartScreenProps> = ({ navigation: navProp, onProceed, onBack }) => {
+  let isDark = false;
+  try {
+    const gc = useGroceryColors();
+    isDark = gc === darkColors || gc.cardBackground === darkColors.cardBackground;
+  } catch {
+    isDark = isCategoryDark();
+  }
+  const activeColors = isDark ? darkColors : lightColors;
+
   const insets = useSafeAreaInsets();
   const hookNav = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const navigation = navProp || hookNav;
@@ -1101,8 +1111,8 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation: navProp, onP
   const tipOptions: TipAmount[] = [0, 20, 30, 50];
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+    <SafeAreaView style={[styles.safeArea, isDark && { backgroundColor: activeColors.background }]}>
+      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={activeColors.background} />
 
       {/* ── Top Animated Progress Bar ── */}
       {isLoading && (
@@ -1142,18 +1152,35 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation: navProp, onP
 
       {/* ── Header ── */}
       <View style={{ zIndex: 10 }}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleBack} style={styles.headerBackBtn} activeOpacity={0.7}>
-            <Ionicons name="arrow-back" size={22} color={COLORS.textPrimary} />
+        <View style={[styles.header, isDark && { backgroundColor: activeColors.cardBackground, borderBottomColor: activeColors.borderLight }]}>
+          <TouchableOpacity
+            onPress={handleBack}
+            style={[
+              styles.headerBackBtn,
+              isDark && {
+                backgroundColor: activeColors.inputBg,
+                borderColor: activeColors.borderLight,
+              },
+            ]}
+            activeOpacity={0.7}
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
+          >
+            <Ionicons name="arrow-back" size={22} color={activeColors.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>My Cart{cartCount > 0 ? ` (${cartCount})` : ''}</Text>
+          <Text style={[styles.headerTitle, isDark && { color: activeColors.textPrimary }]}>
+            My Cart{cartCount > 0 ? ` (${cartCount})` : ''}
+          </Text>
           {cartItems.length > 0 ? (
             <TouchableOpacity
               onPress={handleClearAll}
-              style={styles.headerClearBtn}
+              style={[
+                styles.headerClearBtn,
+                isDark && { backgroundColor: activeColors.dangerLight },
+              ]}
               activeOpacity={0.7}
             >
-              <Text style={styles.headerClearText}>Clear All</Text>
+              <Text style={[styles.headerClearText, isDark && { color: activeColors.danger }]}>Clear All</Text>
             </TouchableOpacity>
           ) : (
             <View style={{ width: 60 }} />

@@ -28,6 +28,7 @@ export type RootStackParamList = {
   Addresses: undefined;
   Notifications: undefined;
   ServicePreferences: undefined;
+  EditProfile: undefined;
 };
 
 export type TabParamList = {

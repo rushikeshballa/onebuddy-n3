@@ -6,8 +6,9 @@ import HelpSupportScreen, { type HelpSupportRef } from '../native/screens/HelpSu
 import { useAppTheme } from '../theme/ThemeContext';
 
 interface HelpSupportHostProps {
-  visible: boolean;
+  visible?: boolean;
   onClose: () => void;
+  asModal?: boolean;
 }
 
 /**
@@ -16,8 +17,9 @@ interface HelpSupportHostProps {
  * persisted, so unlike the other two hosts there is nothing to seed or relay.
  */
 export default function HelpSupportHost({
-  visible,
+  visible = true,
   onClose,
+  asModal = false,
 }: HelpSupportHostProps): React.JSX.Element {
   const { colors: themeColors, scheme } = useAppTheme();
   const helpRef = useRef<HelpSupportRef>(null);
@@ -30,21 +32,29 @@ export default function HelpSupportHost({
     }
   };
 
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="fullScreen"
-      onRequestClose={handleRequestClose}
-      // Remounting on each open clears the previous search and chat draft.
-      key={visible ? 'help-open' : 'help-closed'}
-    >
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: themeColors.sheetBg }]}>
-        <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
-        <HelpSupportScreen ref={helpRef} onClose={onClose} />
-      </SafeAreaView>
-    </Modal>
+  const content = (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: themeColors.sheetBg }]}>
+      <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
+      <HelpSupportScreen ref={helpRef} onClose={onClose} />
+    </SafeAreaView>
   );
+
+  if (asModal) {
+    return (
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={handleRequestClose}
+        // Remounting on each open clears the previous search and chat draft.
+        key={visible ? 'help-open' : 'help-closed'}
+      >
+        {content}
+      </Modal>
+    );
+  }
+
+  return content;
 }
 
 const styles = StyleSheet.create({

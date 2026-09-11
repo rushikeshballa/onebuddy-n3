@@ -78,11 +78,7 @@ export default function SettingsSheet({
   };
 
   const handleEditProfile = () => {
-    if (onOpenEditProfile) {
-      onOpenEditProfile();
-    } else {
-      onClose();
-    }
+    navigateTo('EditProfile');
   };
 
   const handleLogout = () => {

@@ -17,9 +17,10 @@ export interface AddressesPayload {
 }
 
 interface AddressHostProps {
-  visible: boolean;
+  visible?: boolean;
   onChange: (next: AddressesPayload) => void;
   onClose: () => void;
+  asModal?: boolean;
 }
 
 /** "Flat 302, Sai Residency, Banjara Hills, Hyderabad 500034" */
@@ -82,9 +83,10 @@ async function getCurrentLocation(): Promise<LocationResult> {
  * keeps the WebView document's summary in sync.
  */
 export default function AddressHost({
-  visible,
+  visible = true,
   onChange,
   onClose,
+  asModal = false,
 }: AddressHostProps): React.JSX.Element {
   const { user, enabled } = useAuth();
   const { colors: themeColors, scheme } = useAppTheme();
@@ -115,31 +117,37 @@ export default function AddressHost({
     [onChange, enabled, user]
   );
 
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="fullScreen"
-      onRequestClose={onClose}
-      // Remounting on each open gives the screen a clean start, matching the
-      // other native hosts.
-      key={visible ? 'addresses-open' : 'addresses-closed'}
-    >
-      {/* Modals render in their own view hierarchy, so the screen needs its own
-          safe-area provider to get real insets. */}
-      <SafeAreaProvider>
-        <View style={[styles.fill, { backgroundColor: themeColors.sheetBg }]}>
-          <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
-          <AddressScreen
-            onClose={onClose}
-            onChange={handleChange}
-            getCurrentLocation={getCurrentLocation}
-            initialAddresses={cloudAddresses}
-          />
-        </View>
-      </SafeAreaProvider>
-    </Modal>
+  const content = (
+    <SafeAreaProvider>
+      <View style={[styles.fill, { backgroundColor: themeColors.sheetBg }]}>
+        <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
+        <AddressScreen
+          onClose={onClose}
+          onChange={handleChange}
+          getCurrentLocation={getCurrentLocation}
+          initialAddresses={cloudAddresses}
+        />
+      </View>
+    </SafeAreaProvider>
   );
+
+  if (asModal) {
+    return (
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={onClose}
+        // Remounting on each open gives the screen a clean start, matching the
+        // other native hosts.
+        key={visible ? 'addresses-open' : 'addresses-closed'}
+      >
+        {content}
+      </Modal>
+    );
+  }
+
+  return content;
 }
 
 const styles = StyleSheet.create({

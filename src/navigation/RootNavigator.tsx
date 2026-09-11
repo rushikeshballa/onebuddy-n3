@@ -15,6 +15,7 @@ import AppSettingsRoute from '@/screens/AppSettingsRoute';
 import {
   AboutRoute,
   AddressesRoute,
+  EditProfileRoute,
   FoodRoute,
   GroceriesRoute,
   HelpSupportRoute,
@@ -120,11 +121,15 @@ export default function RootNavigator() {
               </Stack.Screen>
             )}
             <Stack.Screen name="Tabs" component={Tabs} />
-            {/* Hosts render their own full-screen Modal, so the stack adds
-                no transition of its own — otherwise both would animate. */}
+            {/* Category sub-apps */}
             <Stack.Group screenOptions={{ animation: 'none' }}>
               <Stack.Screen name="Food" component={FoodRoute} />
               <Stack.Screen name="Groceries" component={GroceriesRoute} />
+            </Stack.Group>
+
+            {/* Settings destinations — push transition (slide_from_right) */}
+            <Stack.Group screenOptions={{ animation: 'slide_from_right' }}>
+              <Stack.Screen name="AppSettings" component={AppSettingsRoute} />
               <Stack.Screen name="SecurityPrivacy" component={SecurityPrivacyRoute} />
               <Stack.Screen name="HelpSupport" component={HelpSupportRoute} />
               <Stack.Screen name="About" component={AboutRoute} />
@@ -133,8 +138,8 @@ export default function RootNavigator() {
               <Stack.Screen name="Addresses" component={AddressesRoute} />
               <Stack.Screen name="Notifications" component={NotificationsRoute} />
               <Stack.Screen name="ServicePreferences" component={ServicePreferencesRoute} />
+              <Stack.Screen name="EditProfile" component={EditProfileRoute} />
             </Stack.Group>
-            <Stack.Screen name="AppSettings" component={AppSettingsRoute} />
           </>
         ) : (
           <>

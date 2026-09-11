@@ -13,12 +13,13 @@ import { getSecurity, saveSecurity } from '../firebase/services/userService';
 export type SecurityPrivacyPayload = SecurityPrivacyValues;
 
 interface SecurityPrivacyHostProps {
-  visible: boolean;
+  visible?: boolean;
   /** Values the WebView is holding when the screen is opened. */
   seed: SecurityPrivacyPayload | null;
   /** Fired on every change so the WebView document can stay in sync. */
   onChange: (next: SecurityPrivacyPayload) => void;
   onClose: () => void;
+  asModal?: boolean;
 }
 
 /**
@@ -31,10 +32,11 @@ interface SecurityPrivacyHostProps {
  * source of truth — and every change is written back to both.
  */
 export default function SecurityPrivacyHost({
-  visible,
+  visible = true,
   seed,
   onChange,
   onClose,
+  asModal = false,
 }: SecurityPrivacyHostProps): React.JSX.Element {
   const { user, enabled } = useAuth();
   const { colors: themeColors, scheme } = useAppTheme();
@@ -61,25 +63,33 @@ export default function SecurityPrivacyHost({
     }
   };
 
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="fullScreen"
-      onRequestClose={onClose}
-      // Remounting on each open means the seed from the WebView is re-applied.
-      key={visible ? 'security-open' : 'security-closed'}
-    >
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: themeColors.sheetBg }]}>
-        <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
-        <SecurityPrivacyScreen
-          navigation={{ goBack: onClose }}
-          initialValues={cloudSeed ?? seed ?? undefined}
-          onValuesChange={handleChange}
-        />
-      </SafeAreaView>
-    </Modal>
+  const content = (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: themeColors.sheetBg }]}>
+      <StatusBar barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'} />
+      <SecurityPrivacyScreen
+        navigation={{ goBack: onClose }}
+        initialValues={cloudSeed ?? seed ?? undefined}
+        onValuesChange={handleChange}
+      />
+    </SafeAreaView>
   );
+
+  if (asModal) {
+    return (
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={onClose}
+        // Remounting on each open means the seed from the WebView is re-applied.
+        key={visible ? 'security-open' : 'security-closed'}
+      >
+        {content}
+      </Modal>
+    );
+  }
+
+  return content;
 }
 
 const styles = StyleSheet.create({

@@ -1,20 +1,39 @@
 import { Order, OrderStatus, DeliverySlot, PaymentMethod } from '../types/order.types';
 import { CartItem } from '../types/cart.types';
 import { Address } from '../types/user.types';
-import { mockOrders } from '../data/orders';
 import { storageHelper, STORAGE_KEYS } from '../utils/helpers';
+import {
+  fetchOrders,
+  fetchOrderById,
+  saveOrder,
+} from '../../../firebase/grocery-service';
 
 export const orderService = {
-  async getOrders(): Promise<Order[]> {
-    const stored = await storageHelper.getItem<Order[]>(STORAGE_KEYS.USER_ORDERS);
-    if (stored && stored.length > 0) {
-      return stored;
+  async getOrders(userId?: string): Promise<Order[]> {
+    try {
+      const backendOrders = await fetchOrders(userId);
+      if (backendOrders && backendOrders.length > 0) {
+        await storageHelper.setItem(STORAGE_KEYS.USER_ORDERS, backendOrders);
+        return backendOrders;
+      }
+    } catch (err) {
+      console.warn('[orderService] Error fetching live orders, falling back to local storage:', err);
     }
-    await storageHelper.setItem(STORAGE_KEYS.USER_ORDERS, mockOrders);
-    return mockOrders;
+
+    const stored = await storageHelper.getItem<Order[]>(STORAGE_KEYS.USER_ORDERS);
+    return stored || [];
   },
 
   async getOrderById(orderId: string): Promise<Order | null> {
+    try {
+      const liveOrder = await fetchOrderById(orderId);
+      if (liveOrder) {
+        return liveOrder;
+      }
+    } catch (err) {
+      console.warn(`[orderService] Error fetching live order ${orderId}:`, err);
+    }
+
     const orders = await this.getOrders();
     return orders.find((o) => o.id === orderId) || null;
   },
@@ -31,7 +50,7 @@ export const orderService = {
     deliverySlot: DeliverySlot;
     paymentMethod: PaymentMethod;
   }): Promise<Order> {
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    await new Promise((resolve) => setTimeout(resolve, 600));
 
     const newOrderId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
     const newOrder: Order = {
@@ -94,8 +113,16 @@ export const orderService = {
       ],
     };
 
-    const existingOrders = await this.getOrders();
-    const updatedOrders = [newOrder, ...existingOrders];
+    // Save to live backend
+    try {
+      await saveOrder(newOrder);
+    } catch (err) {
+      console.warn('[orderService] Failed to persist order to backend Firestore:', err);
+    }
+
+    // Persist locally
+    const existingOrders = await this.getOrders(params.userId);
+    const updatedOrders = [newOrder, ...existingOrders.filter((o) => o.id !== newOrder.id)];
     await storageHelper.setItem(STORAGE_KEYS.USER_ORDERS, updatedOrders);
 
     return newOrder;

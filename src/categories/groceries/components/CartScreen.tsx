@@ -23,7 +23,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, typography, spacing, useGroceryColors, darkColors, lightColors } from '../theme';
 import { isCategoryDark } from '@/theme/categoryThemeBridge';
-import { products as allProducts } from '../data/products';
+import { productService } from '../services/productService';
 import { useCart } from '../context/CartContext';
 import { useUser } from '../context/UserContext';
 import { storageHelper, STORAGE_KEYS, fetchLiveAddressDetails } from '../utils/helpers';
@@ -551,6 +551,11 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation: navProp, onP
 
   // ── Category-wise Recommendations Based on Selected Cart Items ─────────────
   const [selectedRecCategory, setSelectedRecCategory] = useState<string>('All');
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    productService.getProducts().then(setAllProducts).catch(() => {});
+  }, []);
 
   const COMPLEMENTARY_CATEGORY_MAP: Record<string, string[]> = useMemo(() => ({
     cat_fruits: ['cat_vegetables', 'cat_dairy', 'cat_snacks'],
@@ -649,7 +654,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation: navProp, onP
       tag: p.discountPercentage ? `${p.discountPercentage}% OFF` : p.isFeatured ? 'Matches Cart' : undefined,
       category: p.categoryName,
     }));
-  }, [cartItems, cartCategories, selectedRecCategory, dismissedCrossSell, COMPLEMENTARY_CATEGORY_MAP]);
+  }, [allProducts, cartItems, cartCategories, selectedRecCategory, dismissedCrossSell, COMPLEMENTARY_CATEGORY_MAP]);
 
   // ── Handlers ─────────────────────────────────────────────────────────────────
   const handleIncrement = useCallback((productId: string) => {
@@ -733,7 +738,7 @@ export const CartScreen: React.FC<CartScreenProps> = ({ navigation: navProp, onP
       addToCart(prod, 1);
       triggerUndoToast(`"${prod.name}" added to cart`);
     }
-  }, [addToCart]);
+  }, [allProducts, addToCart]);
 
   const handleApplyCoupon = () => {
     triggerQuickLoading('Applying promo...', 320, () => {

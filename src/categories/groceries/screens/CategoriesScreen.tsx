@@ -18,29 +18,37 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation.types';
 
-import { categories as initialCategories } from '../data/categories';
-
-
-
 const { width } = Dimensions.get('window');
 const ITEM_WIDTH = (width - spacing.md * 3) / 2;
 
 export const CategoriesScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [categoriesList, setCategoriesList] = useState<Category[]>(initialCategories);
+  const [categoriesList, setCategoriesList] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    productService.getCategories().then((data) => {
-      if (data && data.length > 0) setCategoriesList(data);
-    });
+    setLoading(true);
+    productService
+      .getCategories()
+      .then((data) => {
+        if (data && data.length > 0) setCategoriesList(data);
+      })
+      .catch((e) => console.error('Failed to fetch categories:', e))
+      .finally(() => setLoading(false));
   }, []);
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header title="All Categories" />
+      <Header title="All Categories" showBack onBack={() => navigation.goBack()} />
 
-      <FlatList
-        data={categoriesList}
+      {loading && categoriesList.length === 0 ? (
+        <LoadingState
+          message="Loading Categories..."
+          subtitle="Fetching fresh grocery aisles for you"
+        />
+      ) : (
+        <FlatList
+          data={categoriesList}
         numColumns={2}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listPadding}
@@ -70,6 +78,7 @@ export const CategoriesScreen: React.FC = () => {
           </TouchableOpacity>
         )}
       />
+      )}
     </SafeAreaView>
   );
 };

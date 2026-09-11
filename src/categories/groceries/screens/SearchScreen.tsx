@@ -14,6 +14,7 @@ import { Header } from '../components/Header';
 import { SearchBar } from '../components/SearchBar';
 import { ProductCard } from '../components/ProductCard';
 import { EmptyState } from '../components/EmptyState';
+import { LoadingState } from '../components/LoadingState';
 import { productService } from '../services/productService';
 import { Product } from '../types/product.types';
 import { useCart } from '../context/CartContext';
@@ -175,7 +176,13 @@ export const SearchScreen: React.FC<SearchScreenProps> = ({ navigation, route })
             </View>
           </View>
         </ScrollView>
-      ) : results.length === 0 && !searching ? (
+      ) : searching ? (
+        <LoadingState
+          message={`Searching for "${query}"...`}
+          subtitle="Looking up fresh grocery items"
+          showLogo={false}
+        />
+      ) : results.length === 0 ? (
         <EmptyState
           iconName="search-outline"
           title="No Products Found"

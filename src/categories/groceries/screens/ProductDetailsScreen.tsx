@@ -24,8 +24,6 @@ import { useWishlist } from '../context/WishlistContext';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types/navigation.types';
-import { products as allProducts } from '../data/products';
-
 type ProductDetailsScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'ProductDetails'>;
   route: RouteProp<RootStackParamList, 'ProductDetails'>;
@@ -36,10 +34,8 @@ export const ProductDetailsScreen: React.FC<ProductDetailsScreenProps> = ({
   route,
 }) => {
   const { productId } = route.params;
-  const [product, setProduct] = useState<Product | null>(() => {
-    return allProducts.find((p) => p.id === productId) || null;
-  });
-  const [loading, setLoading] = useState(false);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [isAdded, setIsAdded] = useState(false);
 
@@ -78,6 +74,7 @@ export const ProductDetailsScreen: React.FC<ProductDetailsScreenProps> = ({
 
   const fetchProductDetails = async () => {
     try {
+      setLoading(true);
       const data = await productService.getProductById(productId);
       if (data) {
         setProduct(data);
@@ -86,11 +83,13 @@ export const ProductDetailsScreen: React.FC<ProductDetailsScreenProps> = ({
       }
     } catch (e) {
       console.error(e);
+    } finally {
+      setLoading(false);
     }
   };
 
   if (!product) {
-    return <LoadingState message="Product not found" />;
+    return <LoadingState message={loading ? "Loading product..." : "Product not found"} />;
   }
 
   const isFavorite = isInWishlist(product.id);

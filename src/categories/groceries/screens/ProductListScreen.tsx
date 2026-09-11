@@ -23,8 +23,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types/navigation.types';
 
-import { products as allProducts } from '../data/products';
-
 type ProductListScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'ProductList'>;
   route: RouteProp<RootStackParamList, 'ProductList'>;
@@ -38,10 +36,8 @@ export const ProductListScreen: React.FC<ProductListScreenProps> = ({
   const { addToCart, getCartCount } = useCart();
   const cartCount = getCartCount();
 
-  const [productsList, setProductsList] = useState<Product[]>(() => {
-    return allProducts.filter((p) => (categoryId ? p.categoryId === categoryId : true));
-  });
-  const [loading, setLoading] = useState(false);
+  const [productsList, setProductsList] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState<SortOption>('popularity');
 
@@ -58,6 +54,7 @@ export const ProductListScreen: React.FC<ProductListScreenProps> = ({
 
   const fetchProducts = async () => {
     try {
+      setLoading(true);
       const filter: ProductFilter = {
         categoryId,
         inStockOnly: filterInStockOnly,
@@ -67,6 +64,8 @@ export const ProductListScreen: React.FC<ProductListScreenProps> = ({
       setProductsList(data);
     } catch (e) {
       console.error(e);
+    } finally {
+      setLoading(false);
     }
   };
 

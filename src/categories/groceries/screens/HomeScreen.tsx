@@ -27,9 +27,6 @@ import { productService } from '../services/productService';
 import { Product } from '../types/product.types';
 import { Category } from '../types/category.types';
 import { Offer } from '../types/offer.types';
-import { categories as defaultCategories } from '../data/categories';
-import { offers as defaultOffers } from '../data/offers';
-import { products as defaultProducts } from '../data/products';
 import { useUser } from '../context/UserContext';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -88,17 +85,13 @@ export const HomeScreen: React.FC = () => {
   const { wishlistCount } = useWishlist();
   const cartCount = getCartCount();
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const [categories, setCategories] = useState<Category[]>(defaultCategories);
-  const [offers, setOffers] = useState<Offer[]>(defaultOffers);
-  const [popularProducts, setPopularProducts] = useState<Product[]>(
-    defaultProducts.filter((p) => p.isFeatured)
-  );
-  const [freshPicks, setFreshPicks] = useState<Product[]>(
-    defaultProducts.filter((p) => !p.isFeatured)
-  );
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [popularProducts, setPopularProducts] = useState<Product[]>([]);
+  const [freshPicks, setFreshPicks] = useState<Product[]>([]);
 
   // ── Address Section State (Exact features as CartScreen) ──
   const [isAddressExpanded, setIsAddressExpanded] = useState<boolean>(false);
@@ -532,8 +525,14 @@ export const HomeScreen: React.FC = () => {
         </View>
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
+      {loading && categories.length === 0 && offers.length === 0 && popularProducts.length === 0 ? (
+        <LoadingState
+          message="Loading Fresh Groceries..."
+          subtitle="Fetching daily offers, categories, and fresh products for you"
+        />
+      ) : (
+        <ScrollView
+          showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[colors.primary as string]} />
         }
@@ -954,6 +953,7 @@ export const HomeScreen: React.FC = () => {
           </View>
         )}
       </ScrollView>
+      )}
 
       {/* ── Address Choice Modal (Exact from Cart: Live Location vs Enter New Address) ── */}
       <Modal

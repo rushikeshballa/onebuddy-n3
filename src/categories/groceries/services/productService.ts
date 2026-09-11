@@ -1,13 +1,18 @@
 import { Product, ProductFilter, SortOption } from '../types/product.types';
 import { Category } from '../types/category.types';
-import { products } from '../data/products';
-import { categories } from '../data/categories';
-import { offers } from '../data/offers';
 import { Offer } from '../types/offer.types';
+import {
+  fetchCategories,
+  fetchProducts,
+  fetchProductById,
+  fetchFeaturedProducts,
+  fetchOffers,
+} from '../../../firebase/grocery-service';
 
 export const productService = {
   async getProducts(filter?: ProductFilter, sort?: SortOption): Promise<Product[]> {
-    let result = [...products];
+    const all = await fetchProducts();
+    let result = [...all];
 
     if (filter) {
       if (filter.categoryId) {
@@ -59,17 +64,18 @@ export const productService = {
   },
 
   async getProductById(id: string): Promise<Product | null> {
-    const found = products.find((p) => p.id === id);
-    return found || null;
+    return fetchProductById(id);
   },
 
   async getFeaturedProducts(): Promise<Product[]> {
-    return products.filter((p) => p.isFeatured);
+    return fetchFeaturedProducts();
   },
 
   async searchProducts(query: string): Promise<Product[]> {
     const cleanQuery = query.toLowerCase().trim();
     if (!cleanQuery) return [];
+
+    const products = await fetchProducts();
 
     // Category synonyms mapping for precise voice and text intent matching
     const CATEGORY_MAP: Record<string, string[]> = {
@@ -170,10 +176,10 @@ export const productService = {
   },
 
   async getCategories(): Promise<Category[]> {
-    return categories;
+    return fetchCategories();
   },
 
   async getOffers(): Promise<Offer[]> {
-    return offers;
+    return fetchOffers();
   },
 };

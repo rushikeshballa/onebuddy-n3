@@ -14,15 +14,14 @@ import { EmptyState } from '../components/EmptyState';
 import { LoadingState } from '../components/LoadingState';
 import { orderService } from '../services/orderService';
 import { Order } from '../types/order.types';
-import { mockOrders } from '../data/orders';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation.types';
 
 export const OrdersScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
-  const [loading, setLoading] = useState(false);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -32,10 +31,11 @@ export const OrdersScreen: React.FC = () => {
   const fetchOrders = async () => {
     try {
       const data = await orderService.getOrders();
-      if (data && data.length > 0) setOrders(data);
+      if (data) setOrders(data);
     } catch (e) {
       console.error(e);
     } finally {
+      setLoading(false);
       setRefreshing(false);
     }
   };
@@ -49,7 +49,9 @@ export const OrdersScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <Header title="My Orders" showBack onBack={() => navigation.goBack()} />
 
-      {orders.length === 0 ? (
+      {loading && orders.length === 0 ? (
+        <LoadingState message="Loading your orders..." />
+      ) : orders.length === 0 ? (
         <EmptyState
           iconName="receipt-outline"
           title="No Orders Placed Yet"
